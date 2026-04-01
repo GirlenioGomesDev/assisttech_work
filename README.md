@@ -42,7 +42,7 @@ assisttech/
 
 ### backend/.env
 
-O projeto já está com a configuração do Atlas que você informou:
+O projeto está com a configuração do Atla. Segue as informações:
 
 ```env
 PORT=3000
@@ -72,8 +72,6 @@ copy .env.example .env
 npm run seed:admin
 npm run dev
 ```
-
-> Se você já quiser usar o `.env` que foi enviado no ZIP, não precisa copiar de novo.
 
 ### Frontend
 
@@ -173,9 +171,8 @@ VITE_API_URL=https://SEU-BACKEND.vercel.app/api
 
 - o arquivo `backend/.env` não deve ser enviado ao GitHub público
 - o `.gitignore` já está configurado para ignorar `.env`
-- removi o diretório de componentes de Figma e qualquer vestígio direto desse gerador do projeto final
 - o cadastro de aparelho foi centralizado pela criação da OS, porque o aparelho já entra vinculado ao atendimento correto
-- a página de aparelhos agora mostra os aparelhos reais cadastrados nas ordens de serviço
+- a página de aparelhos mostra os aparelhos reais cadastrados nas ordens de serviço
 
 ## O que foi corrigido nesta versão
 
