@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Search, UserCheck } from 'lucide-react';
 import { apiRequest } from '../services/api';
-import { onlyDigits } from '../utils/onlyDigits';
+import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 
 interface Cliente {
   _id: string;
@@ -16,6 +16,8 @@ interface Cliente {
   nome: string;
   telefone?: string;
   whatsapp?: string;
+  cpf?: string;
+  email?: string;
 }
 
 interface Usuario {
@@ -32,6 +34,7 @@ export function NovaOS() {
   const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true);
+  const [clienteSearch, setClienteSearch] = useState('');
 
   const [formData, setFormData] = useState({
     clienteId: '',
@@ -88,6 +91,43 @@ export function NovaOS() {
       tipo_aparelho: value,
       imei_ou_serial: value === 'celular' ? onlyDigits(prev.imei_ou_serial) : prev.imei_ou_serial,
     }));
+  };
+
+  const clienteSelecionado = useMemo(
+    () => clientes.find((cliente) => cliente._id === formData.clienteId),
+    [clientes, formData.clienteId]
+  );
+
+  const clientesFiltrados = useMemo(() => {
+    const termo = clienteSearch.trim().toLowerCase();
+    const digitos = onlyDigits(clienteSearch);
+
+    if (!termo) return clientes.slice(0, 6);
+
+    return clientes
+      .filter((cliente) => {
+        const texto = [
+          cliente.nome,
+          cliente.id_cliente,
+          cliente.email,
+          cliente.telefone,
+          cliente.whatsapp,
+          cliente.cpf,
+          formatPhone(cliente.telefone || ''),
+          formatPhone(cliente.whatsapp || ''),
+          formatCpf(cliente.cpf || ''),
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return texto.includes(termo) || (!!digitos && texto.includes(digitos));
+      })
+      .slice(0, 8);
+  }, [clienteSearch, clientes]);
+
+  const selecionarCliente = (cliente: Cliente) => {
+    handleChange('clienteId', cliente._id);
+    setClienteSearch(cliente.nome);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,21 +214,57 @@ export function NovaOS() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="clienteId">Cliente *</Label>
-                    <Select
-                      value={formData.clienteId}
-                      onValueChange={(value) => handleChange('clienteId', value)}
-                    >
-                      <SelectTrigger id="clienteId">
-                        <SelectValue placeholder="Selecione o cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clientes.map((cliente) => (
-                          <SelectItem key={cliente._id} value={cliente._id}>
-                            {cliente.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="clienteId"
+                        value={clienteSearch}
+                        onChange={(e) => {
+                          setClienteSearch(e.target.value);
+                          handleChange('clienteId', '');
+                        }}
+                        placeholder="Buscar por nome, CPF, telefone ou codigo"
+                        className="pl-10"
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    {clienteSelecionado ? (
+                      <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+                        <div className="flex items-center gap-2 font-medium">
+                          <UserCheck className="h-4 w-4" />
+                          {clienteSelecionado.nome}
+                        </div>
+                        <p className="mt-1 text-green-800">
+                          {clienteSelecionado.id_cliente}
+                          {clienteSelecionado.telefone ? ` • ${formatPhone(clienteSelecionado.telefone)}` : ''}
+                          {clienteSelecionado.cpf ? ` • CPF ${formatCpf(clienteSelecionado.cpf)}` : ''}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="max-h-56 overflow-y-auto rounded-md border bg-white">
+                        {clientesFiltrados.length > 0 ? (
+                          clientesFiltrados.map((cliente) => (
+                            <button
+                              key={cliente._id}
+                              type="button"
+                              className="w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-blue-50"
+                              onClick={() => selecionarCliente(cliente)}
+                            >
+                              <span className="block text-sm font-medium text-gray-900">{cliente.nome}</span>
+                              <span className="block text-xs text-gray-600">
+                                {cliente.id_cliente}
+                                {cliente.telefone ? ` • ${formatPhone(cliente.telefone)}` : ''}
+                                {cliente.whatsapp ? ` • WhatsApp ${formatPhone(cliente.whatsapp)}` : ''}
+                                {cliente.cpf ? ` • CPF ${formatCpf(cliente.cpf)}` : ''}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-2 text-sm text-gray-500">Nenhum cliente encontrado</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
