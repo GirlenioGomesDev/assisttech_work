@@ -10,6 +10,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ArrowLeft, User, Calendar, AlertCircle, DollarSign, Wrench, Clock, Save, CheckCircle, Package } from 'lucide-react';
 import { apiRequest } from '../services/api';
+import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 
 const statusOptions = [
   { value: 'aberta', label: 'Aberta', color: 'bg-blue-100 text-blue-800' },
@@ -349,7 +350,7 @@ export function DetalhesOS() {
                 <CardHeader><CardTitle>Informações do Cliente</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <p><strong>Nome:</strong> {os.cliente?.nome || 'Não informado'}</p>
-                  <p><strong>Telefone:</strong> {os.cliente?.telefone || os.cliente?.whatsapp || 'Não informado'}</p>
+                  <p><strong>Telefone:</strong> {formatPhone(os.cliente?.telefone || os.cliente?.whatsapp || '') || 'Não informado'}</p>
                   <p><strong>E-mail:</strong> {os.cliente?.email || 'Não informado'}</p>
                 </CardContent>
               </Card>
@@ -397,8 +398,8 @@ export function DetalhesOS() {
                 <CardHeader><CardTitle>Orçamento</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Valor mão de obra</Label><Input type="number" min="0" value={orcamento.valor_mao_obra} onChange={(e) => setOrcamento({ ...orcamento, valor_mao_obra: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
-                    <div className="space-y-2"><Label>Valor de peças</Label><Input type="number" min="0" value={orcamento.valor_pecas} onChange={(e) => setOrcamento({ ...orcamento, valor_pecas: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
+                    <div className="space-y-2"><Label>Valor mão de obra</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_mao_obra} onChange={(e) => setOrcamento({ ...orcamento, valor_mao_obra: onlyDigits(e.target.value) })} disabled={!canDiagnosticar || saving} /></div>
+                    <div className="space-y-2"><Label>Valor de peças</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_pecas} onChange={(e) => setOrcamento({ ...orcamento, valor_pecas: onlyDigits(e.target.value) })} disabled={!canDiagnosticar || saving} /></div>
                   </div>
                   <div className="space-y-2"><Label>Status da aprovação</Label><Select value={orcamento.status_aprovacao} onValueChange={(value) => setOrcamento({ ...orcamento, status_aprovacao: value })} disabled={!canAprovar || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="aprovado">Aprovado</SelectItem><SelectItem value="rejeitado">Rejeitado</SelectItem></SelectContent></Select></div>
                   <div className="space-y-2"><Label>Observação da aprovação</Label><Textarea value={orcamento.observacao_aprovacao} onChange={(e) => setOrcamento({ ...orcamento, observacao_aprovacao: e.target.value })} disabled={!(canAprovar || canDiagnosticar) || saving} /></div>
@@ -430,8 +431,8 @@ export function DetalhesOS() {
                 <CardHeader><CardTitle>Pagamento</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Valor bruto</Label><Input type="number" min="0" value={pagamento.valor_bruto} onChange={(e) => setPagamento({ ...pagamento, valor_bruto: e.target.value })} disabled={!canFinanceiro || saving} /></div>
-                    <div className="space-y-2"><Label>Desconto</Label><Input type="number" min="0" value={pagamento.desconto} onChange={(e) => setPagamento({ ...pagamento, desconto: e.target.value })} disabled={!canFinanceiro || saving} /></div>
+                    <div className="space-y-2"><Label>Valor bruto</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={pagamento.valor_bruto} onChange={(e) => setPagamento({ ...pagamento, valor_bruto: onlyDigits(e.target.value) })} disabled={!canFinanceiro || saving} /></div>
+                    <div className="space-y-2"><Label>Desconto</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={pagamento.desconto} onChange={(e) => setPagamento({ ...pagamento, desconto: onlyDigits(e.target.value) })} disabled={!canFinanceiro || saving} /></div>
                     <div className="space-y-2"><Label>Forma de pagamento</Label><Select value={pagamento.forma_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, forma_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pix">Pix</SelectItem><SelectItem value="dinheiro">Dinheiro</SelectItem><SelectItem value="cartao">Cartão</SelectItem><SelectItem value="boleto">Boleto</SelectItem></SelectContent></Select></div>
                     <div className="space-y-2"><Label>Status do pagamento</Label><Select value={pagamento.status_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, status_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="pago">Pago</SelectItem><SelectItem value="cancelado">Cancelado</SelectItem></SelectContent></Select></div>
                     <div className="space-y-2 md:col-span-2"><Label>Data do pagamento</Label><Input type="datetime-local" value={pagamento.data_pagamento} onChange={(e) => setPagamento({ ...pagamento, data_pagamento: e.target.value })} disabled={!canFinanceiro || saving} /></div>
@@ -446,7 +447,7 @@ export function DetalhesOS() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Recebedor</Label><Input value={entrega.recebedor_nome} onChange={(e) => setEntrega({ ...entrega, recebedor_nome: e.target.value })} disabled={!canEntregar || saving} /></div>
-                    <div className="space-y-2"><Label>Documento</Label><Input value={entrega.recebedor_documento} onChange={(e) => setEntrega({ ...entrega, recebedor_documento: e.target.value })} disabled={!canEntregar || saving} /></div>
+                    <div className="space-y-2"><Label>Documento</Label><Input value={formatCpf(entrega.recebedor_documento)} inputMode="numeric" maxLength={14} onChange={(e) => setEntrega({ ...entrega, recebedor_documento: onlyDigits(e.target.value) })} disabled={!canEntregar || saving} /></div>
                     <div className="space-y-2 md:col-span-2"><Label>Data da entrega</Label><Input type="datetime-local" value={entrega.data_entrega} onChange={(e) => setEntrega({ ...entrega, data_entrega: e.target.value })} disabled={!canEntregar || saving} /></div>
                   </div>
                   <div className="space-y-2"><Label>Observações</Label><Textarea value={entrega.observacoes} onChange={(e) => setEntrega({ ...entrega, observacoes: e.target.value })} disabled={!canEntregar || saving} /></div>

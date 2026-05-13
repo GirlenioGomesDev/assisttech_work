@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Smartphone, FileText, DollarSign } from 'lucide-react';
 import { apiRequest } from '../services/api';
+import { formatCpf, formatPhone } from '../utils/onlyDigits';
 
 interface Cliente {
   _id: string;
@@ -87,9 +88,9 @@ export function HistoricoCliente() {
       <Card>
         <CardHeader><CardTitle>Dados do cliente</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-sm text-gray-700">
-          <p><strong>Telefone:</strong> {cliente.telefone || cliente.whatsapp || 'Não informado'}</p>
+          <p><strong>Telefone:</strong> {formatPhone(cliente.telefone || cliente.whatsapp || '') || 'Não informado'}</p>
           <p><strong>E-mail:</strong> {cliente.email || 'Não informado'}</p>
-          <p><strong>CPF:</strong> {cliente.cpf || 'Não informado'}</p>
+          <p><strong>CPF:</strong> {formatCpf(cliente.cpf || '') || 'Não informado'}</p>
         </CardContent>
       </Card>
 

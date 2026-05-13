@@ -8,6 +8,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { CheckCircle } from 'lucide-react';
 import { apiRequest } from '../services/api';
+import { onlyDigits } from '../utils/onlyDigits';
 
 interface Cliente {
   _id: string;
@@ -77,7 +78,15 @@ export function NovaOS() {
   const handleChange = (campo: string, valor: string) => {
     setFormData((prev) => ({
       ...prev,
-      [campo]: valor,
+      [campo]: campo === 'imei_ou_serial' && prev.tipo_aparelho === 'celular' ? onlyDigits(valor) : valor,
+    }));
+  };
+
+  const handleTipoAparelhoChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tipo_aparelho: value,
+      imei_ou_serial: value === 'celular' ? onlyDigits(prev.imei_ou_serial) : prev.imei_ou_serial,
     }));
   };
 
@@ -113,7 +122,10 @@ export function NovaOS() {
           marca: formData.marca,
           modelo: formData.modelo,
           cor: formData.cor,
-          imei_ou_serial: formData.imei_ou_serial,
+          imei_ou_serial:
+            formData.tipo_aparelho === 'celular'
+              ? onlyDigits(formData.imei_ou_serial)
+              : formData.imei_ou_serial,
           acessorios_entregues: formData.acessorios_entregues,
           senha_informada: formData.senha_informada,
           estado_fisico: formData.estado_fisico,
@@ -218,7 +230,7 @@ export function NovaOS() {
                     <Label htmlFor="tipo_aparelho">Tipo do Aparelho *</Label>
                     <Select
                       value={formData.tipo_aparelho}
-                      onValueChange={(value) => handleChange('tipo_aparelho', value)}
+                      onValueChange={handleTipoAparelhoChange}
                     >
                       <SelectTrigger id="tipo_aparelho">
                         <SelectValue placeholder="Selecione" />
@@ -270,9 +282,13 @@ export function NovaOS() {
                     <Input
                       id="imei_ou_serial"
                       name="imei_ou_serial"
+                      type="text"
                       value={formData.imei_ou_serial}
                       onChange={(e) => handleChange('imei_ou_serial', e.target.value)}
-                      placeholder="Digite o IMEI ou serial"
+                      placeholder={formData.tipo_aparelho === 'celular' ? 'Digite o IMEI' : 'Digite o serial'}
+                      inputMode={formData.tipo_aparelho === 'celular' ? 'numeric' : undefined}
+                      pattern={formData.tipo_aparelho === 'celular' ? '[0-9]*' : undefined}
+                      maxLength={formData.tipo_aparelho === 'celular' ? 15 : undefined}
                     />
                   </div>
 

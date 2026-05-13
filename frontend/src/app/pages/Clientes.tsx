@@ -8,6 +8,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Plus, Search, Phone, Mail, MapPin, Edit, History } from 'lucide-react';
 import { Link } from 'react-router';
 import { apiRequest } from '../services/api';
+import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 
 interface Cliente {
   _id: string;
@@ -62,10 +63,12 @@ export function Clientes() {
     }
   };
 
+  const numericFields = new Set(['cpf', 'telefone', 'whatsapp']);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: numericFields.has(field) ? onlyDigits(value) : value,
     }));
   };
 
@@ -118,11 +121,18 @@ export function Clientes() {
     }
   };
 
-  const filteredClientes = clientes.filter((cliente) =>
-    cliente.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.telefone?.includes(searchTerm) ||
-    cliente.cpf?.includes(searchTerm)
-  );
+  const searchDigits = onlyDigits(searchTerm);
+  const filteredClientes = clientes.filter((cliente) => {
+    const searchText = searchTerm.toLowerCase();
+
+    return (
+      cliente.nome?.toLowerCase().includes(searchText) ||
+      cliente.telefone?.includes(searchDigits) ||
+      cliente.cpf?.includes(searchDigits) ||
+      formatPhone(cliente.telefone || '').includes(searchTerm) ||
+      formatCpf(cliente.cpf || '').includes(searchTerm)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -163,8 +173,12 @@ export function Clientes() {
                   <Input
                     id="cpf"
                     placeholder="000.000.000-00"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9.\-]*"
+                    maxLength={14}
                     required
-                    value={formData.cpf}
+                    value={formatCpf(formData.cpf)}
                     onChange={(e) => handleInputChange('cpf', e.target.value)}
                   />
                 </div>
@@ -174,8 +188,12 @@ export function Clientes() {
                   <Input
                     id="telefone"
                     placeholder="(00) 00000-0000"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9() \-]*"
+                    maxLength={15}
                     required
-                    value={formData.telefone}
+                    value={formatPhone(formData.telefone)}
                     onChange={(e) => handleInputChange('telefone', e.target.value)}
                   />
                 </div>
@@ -185,7 +203,11 @@ export function Clientes() {
                   <Input
                     id="whatsapp"
                     placeholder="(00) 00000-0000"
-                    value={formData.whatsapp}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9() \-]*"
+                    maxLength={15}
+                    value={formatPhone(formData.whatsapp)}
                     onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                   />
                 </div>
@@ -271,7 +293,7 @@ export function Clientes() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Phone className="h-4 w-4" />
-                    {cliente.telefone}
+                    {formatPhone(cliente.telefone)}
                   </div>
 
                   {cliente.email && (
@@ -295,7 +317,7 @@ export function Clientes() {
                   )}
 
                   <div className="text-gray-500">
-                    CPF: {cliente.cpf}
+                    CPF: {formatCpf(cliente.cpf)}
                   </div>
                 </div>
 

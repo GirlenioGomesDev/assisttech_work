@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const onlyDigits = require('../utils/onlyDigits');
 
 const EnderecoSchema = new mongoose.Schema({
   cep: String, rua: String, numero: String, bairro: String, cidade: String, estado: String, complemento: String
@@ -7,9 +8,9 @@ const EnderecoSchema = new mongoose.Schema({
 const ClienteSchema = new mongoose.Schema({
   id_cliente: { type: String, required: true, unique: true },
   nome: { type: String, required: true, trim: true },
-  telefone: { type: String, required: true },
-  whatsapp: { type: String },
-  cpf: { type: String, unique: true, sparse: true },
+  telefone: { type: String, required: true, set: onlyDigits },
+  whatsapp: { type: String, set: onlyDigits },
+  cpf: { type: String, unique: true, sparse: true, set: onlyDigits },
   email: { type: String, lowercase: true, trim: true },
   endereco: EnderecoSchema,
   observacoes: { type: String },
