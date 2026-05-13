@@ -8,7 +8,8 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, User, Calendar, AlertCircle, DollarSign, Wrench, Clock, Save, CheckCircle, Package } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2 } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 
@@ -108,6 +109,7 @@ export function DetalhesOS() {
   const [os, setOs] = useState<OrdemServico | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const [diagnostico, setDiagnostico] = useState({
     defeito_identificado: '',
@@ -147,6 +149,22 @@ export function DetalhesOS() {
     recebedor_documento: '',
     observacoes: '',
     data_entrega: '',
+  });
+
+  const [dadosOS, setDadosOS] = useState({
+    tipo_aparelho: '',
+    marca: '',
+    modelo: '',
+    cor: '',
+    imei_ou_serial: '',
+    acessorios_entregues: '',
+    senha_informada: '',
+    estado_fisico: '',
+    defeito_relatado: '',
+    defeito_relatado_inicial: '',
+    prioridade: 'media',
+    prazo_estimado: '',
+    observacoes_gerais: '',
   });
 
   useEffect(() => {
@@ -193,6 +211,21 @@ export function DetalhesOS() {
         observacoes: data.entrega?.observacoes || '',
         data_entrega: data.entrega?.data_entrega ? new Date(data.entrega.data_entrega).toISOString().slice(0, 16) : '',
       });
+      setDadosOS({
+        tipo_aparelho: data.aparelho?.tipo_aparelho || '',
+        marca: data.aparelho?.marca || '',
+        modelo: data.aparelho?.modelo || '',
+        cor: data.aparelho?.cor || '',
+        imei_ou_serial: data.aparelho?.imei_ou_serial || '',
+        acessorios_entregues: data.aparelho?.acessorios_entregues || '',
+        senha_informada: data.aparelho?.senha_informada || '',
+        estado_fisico: data.aparelho?.estado_fisico || '',
+        defeito_relatado: data.defeito_relatado || '',
+        defeito_relatado_inicial: data.aparelho?.defeito_relatado_inicial || '',
+        prioridade: data.prioridade || 'media',
+        prazo_estimado: data.prazo_estimado ? new Date(data.prazo_estimado).toISOString().slice(0, 10) : '',
+        observacoes_gerais: data.observacoes_gerais || '',
+      });
     } catch (error) {
       console.error(error);
       setOs(null);
@@ -206,6 +239,8 @@ export function DetalhesOS() {
   const canFinanceiro = ['admin', 'financeiro'].includes(user?.perfil);
   const canEntregar = ['admin', 'atendente'].includes(user?.perfil);
   const canAlterarStatus = ['admin', 'tecnico', 'atendente'].includes(user?.perfil);
+  const canEditarOS = ['admin', 'atendente'].includes(user?.perfil);
+  const canExcluirOS = user?.perfil === 'admin';
 
   const formatarData = (data?: string) => {
     if (!data) return 'Não informado';
@@ -318,6 +353,69 @@ export function DetalhesOS() {
     });
   }, 'Status atualizado com sucesso');
 
+  const handleDadosOSChange = (campo: string, valor: string) => {
+    setDadosOS((prev) => ({
+      ...prev,
+      [campo]: campo === 'imei_ou_serial' && prev.tipo_aparelho === 'celular' ? onlyDigits(valor).slice(0, 15) : valor,
+    }));
+  };
+
+  const handleTipoAparelhoChange = (value: string) => {
+    setDadosOS((prev) => ({
+      ...prev,
+      tipo_aparelho: value,
+      imei_ou_serial: value === 'celular' ? onlyDigits(prev.imei_ou_serial).slice(0, 15) : prev.imei_ou_serial,
+    }));
+  };
+
+  const salvarDadosOS = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    await withSave(async () => {
+      await apiRequest(`/os/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          defeito_relatado: dadosOS.defeito_relatado,
+          prioridade: dadosOS.prioridade,
+          prazo_estimado: dadosOS.prazo_estimado,
+          observacoes_gerais: dadosOS.observacoes_gerais,
+          aparelho: {
+            ...(os?.aparelho || {}),
+            tipo_aparelho: dadosOS.tipo_aparelho,
+            marca: dadosOS.marca,
+            modelo: dadosOS.modelo,
+            cor: dadosOS.cor,
+            imei_ou_serial:
+              dadosOS.tipo_aparelho === 'celular'
+                ? onlyDigits(dadosOS.imei_ou_serial).slice(0, 15)
+                : dadosOS.imei_ou_serial,
+            acessorios_entregues: dadosOS.acessorios_entregues,
+            senha_informada: dadosOS.senha_informada,
+            estado_fisico: dadosOS.estado_fisico,
+            defeito_relatado_inicial: dadosOS.defeito_relatado_inicial,
+          },
+        }),
+      });
+      setEditDialogOpen(false);
+    }, 'Ordem de serviço atualizada com sucesso');
+  };
+
+  const excluirOS = async () => {
+    const confirmou = window.confirm(`Tem certeza que deseja apagar a OS #${os?.id_os}?`);
+    if (!confirmou) return;
+
+    try {
+      setSaving(true);
+      await apiRequest(`/os/${id}`, { method: 'DELETE' });
+      alert('Ordem de serviço apagada com sucesso!');
+      navigate('/ordens-servico');
+    } catch (error: any) {
+      alert(error.message || 'Erro ao apagar ordem de serviço');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <Card><CardContent className="p-12 text-center text-gray-500">Carregando ordem de serviço...</CardContent></Card>;
   if (!os) return <Card><CardContent className="p-12 text-center text-gray-500">Ordem de serviço não encontrada</CardContent></Card>;
 
@@ -332,7 +430,125 @@ export function DetalhesOS() {
           </div>
           <p className="text-gray-600 mt-1">Detalhes completos da ordem de serviço</p>
         </div>
+        <div className="flex gap-2">
+          {canEditarOS && (
+            <Button variant="outline" onClick={() => setEditDialogOpen(true)} disabled={saving}>
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          )}
+          {canExcluirOS && (
+            <Button variant="outline" onClick={excluirOS} disabled={saving}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Apagar
+            </Button>
+          )}
+        </div>
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar ordem de serviço</DialogTitle>
+          </DialogHeader>
+
+          <form className="space-y-4" onSubmit={salvarDadosOS}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_tipo_aparelho">Tipo do aparelho *</Label>
+                <Select value={dadosOS.tipo_aparelho} onValueChange={handleTipoAparelhoChange}>
+                  <SelectTrigger id="edit_tipo_aparelho"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="celular">Celular</SelectItem>
+                    <SelectItem value="notebook">Notebook</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_marca">Marca *</Label>
+                <Input id="edit_marca" value={dadosOS.marca} onChange={(e) => handleDadosOSChange('marca', e.target.value)} required />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_modelo">Modelo *</Label>
+                <Input id="edit_modelo" value={dadosOS.modelo} onChange={(e) => handleDadosOSChange('modelo', e.target.value)} required />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_cor">Cor</Label>
+                <Input id="edit_cor" value={dadosOS.cor} onChange={(e) => handleDadosOSChange('cor', e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_imei">IMEI / Serial</Label>
+                <Input
+                  id="edit_imei"
+                  type="text"
+                  value={dadosOS.imei_ou_serial}
+                  onChange={(e) => handleDadosOSChange('imei_ou_serial', e.target.value)}
+                  inputMode={dadosOS.tipo_aparelho === 'celular' ? 'numeric' : undefined}
+                  pattern={dadosOS.tipo_aparelho === 'celular' ? '[0-9]*' : undefined}
+                  maxLength={dadosOS.tipo_aparelho === 'celular' ? 15 : undefined}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_prioridade">Prioridade *</Label>
+                <Select value={dadosOS.prioridade} onValueChange={(value) => handleDadosOSChange('prioridade', value)}>
+                  <SelectTrigger id="edit_prioridade"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="media">Média</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_prazo">Previsão de entrega</Label>
+                <Input id="edit_prazo" type="date" value={dadosOS.prazo_estimado} onChange={(e) => handleDadosOSChange('prazo_estimado', e.target.value)} />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit_acessorios">Acessórios entregues</Label>
+                <Input id="edit_acessorios" value={dadosOS.acessorios_entregues} onChange={(e) => handleDadosOSChange('acessorios_entregues', e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_senha">Senha informada</Label>
+                <Input id="edit_senha" value={dadosOS.senha_informada} onChange={(e) => handleDadosOSChange('senha_informada', e.target.value)} />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit_estado">Estado físico</Label>
+                <Input id="edit_estado" value={dadosOS.estado_fisico} onChange={(e) => handleDadosOSChange('estado_fisico', e.target.value)} />
+              </div>
+
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="edit_defeito">Defeito relatado *</Label>
+                <Textarea id="edit_defeito" value={dadosOS.defeito_relatado} onChange={(e) => handleDadosOSChange('defeito_relatado', e.target.value)} required />
+              </div>
+
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="edit_defeito_inicial">Defeito inicial no aparelho</Label>
+                <Textarea id="edit_defeito_inicial" value={dadosOS.defeito_relatado_inicial} onChange={(e) => handleDadosOSChange('defeito_relatado_inicial', e.target.value)} />
+              </div>
+
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="edit_observacoes">Observações gerais</Label>
+                <Textarea id="edit_observacoes" value={dadosOS.observacoes_gerais} onChange={(e) => handleDadosOSChange('observacoes_gerais', e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar alterações'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

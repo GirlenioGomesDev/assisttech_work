@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Search, Phone, Mail, MapPin, Edit, History } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, Edit, History, Trash2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
@@ -32,9 +32,13 @@ interface Cliente {
 export function Clientes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const canEditCliente = ['admin', 'atendente'].includes(user?.perfil);
+  const canDeleteCliente = user?.perfil === 'admin';
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -65,6 +69,35 @@ export function Clientes() {
 
   const numericFields = new Set(['cpf', 'telefone', 'whatsapp']);
 
+  const emptyForm = {
+    nome: '',
+    cpf: '',
+    telefone: '',
+    whatsapp: '',
+    email: '',
+    endereco: '',
+    observacoes: '',
+  };
+
+  const resetForm = () => {
+    setEditingCliente(null);
+    setFormData(emptyForm);
+  };
+
+  const abrirEdicaoCliente = (cliente: Cliente) => {
+    setEditingCliente(cliente);
+    setFormData({
+      nome: cliente.nome || '',
+      cpf: cliente.cpf || '',
+      telefone: cliente.telefone || '',
+      whatsapp: cliente.whatsapp || '',
+      email: cliente.email || '',
+      endereco: cliente.endereco?.rua || '',
+      observacoes: cliente.observacoes || '',
+    });
+    setDialogOpen(true);
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -72,7 +105,7 @@ export function Clientes() {
     }));
   };
 
-  const handleCadastrarCliente = async (e: React.FormEvent) => {
+  const handleSalvarCliente = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
@@ -80,42 +113,52 @@ export function Clientes() {
 
       const enderecoTexto = formData.endereco || '';
 
-      await apiRequest('/clientes', {
-        method: 'POST',
-        body: JSON.stringify({
-          nome: formData.nome,
-          telefone: formData.telefone,
-          whatsapp: formData.whatsapp,
-          cpf: formData.cpf,
-          email: formData.email,
-          endereco: {
-            rua: enderecoTexto,
-            numero: '',
-            bairro: '',
-            cidade: '',
-            estado: '',
-            cep: '',
-          },
-          observacoes: formData.observacoes,
-        }),
+      const payload = {
+        nome: formData.nome,
+        telefone: formData.telefone,
+        whatsapp: formData.whatsapp,
+        cpf: formData.cpf,
+        email: formData.email,
+        endereco: {
+          rua: enderecoTexto,
+          numero: editingCliente?.endereco?.numero || '',
+          bairro: editingCliente?.endereco?.bairro || '',
+          cidade: editingCliente?.endereco?.cidade || '',
+          estado: editingCliente?.endereco?.estado || '',
+          cep: editingCliente?.endereco?.cep || '',
+        },
+        observacoes: formData.observacoes,
+      };
+
+      await apiRequest(editingCliente ? `/clientes/${editingCliente._id}` : '/clientes', {
+        method: editingCliente ? 'PUT' : 'POST',
+        body: JSON.stringify(payload),
       });
 
       setDialogOpen(false);
-      setFormData({
-        nome: '',
-        cpf: '',
-        telefone: '',
-        whatsapp: '',
-        email: '',
-        endereco: '',
-        observacoes: '',
-      });
+      resetForm();
 
       await carregarClientes();
-      alert('Cliente cadastrado com sucesso!');
+      alert(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
     } catch (error: any) {
-      console.error('Erro ao cadastrar cliente:', error);
-      alert(error.message || 'Erro ao cadastrar cliente');
+      console.error('Erro ao salvar cliente:', error);
+      alert(error.message || 'Erro ao salvar cliente');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExcluirCliente = async (cliente: Cliente) => {
+    const confirmou = window.confirm(`Tem certeza que deseja apagar o cliente ${cliente.nome}?`);
+    if (!confirmou) return;
+
+    try {
+      setSaving(true);
+      await apiRequest(`/clientes/${cliente._id}`, { method: 'DELETE' });
+      await carregarClientes();
+      alert('Cliente apagado com sucesso!');
+    } catch (error: any) {
+      alert(error.message || 'Erro ao apagar cliente');
     } finally {
       setSaving(false);
     }
@@ -143,9 +186,9 @@ export function Clientes() {
           <p className="text-gray-600">Gerencie o cadastro de clientes</p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Cliente
             </Button>
@@ -153,10 +196,10 @@ export function Clientes() {
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Cadastrar Cliente</DialogTitle>
+              <DialogTitle>{editingCliente ? 'Editar Cliente' : 'Cadastrar Cliente'}</DialogTitle>
             </DialogHeader>
 
-            <form className="space-y-4" onSubmit={handleCadastrarCliente}>
+            <form className="space-y-4" onSubmit={handleSalvarCliente}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo *</Label>
@@ -248,7 +291,7 @@ export function Clientes() {
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Salvando...' : 'Cadastrar'}
+                  {saving ? 'Salvando...' : editingCliente ? 'Salvar alterações' : 'Cadastrar'}
                 </Button>
               </div>
             </form>
@@ -328,10 +371,12 @@ export function Clientes() {
                 )}
 
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1" disabled>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
+                  {canEditCliente && (
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => abrirEdicaoCliente(cliente)} disabled={saving}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  )}
 
                   <Link to={`/historico-cliente/${cliente._id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
@@ -339,6 +384,12 @@ export function Clientes() {
                       Histórico
                     </Button>
                   </Link>
+
+                  {canDeleteCliente && (
+                    <Button variant="outline" size="sm" onClick={() => handleExcluirCliente(cliente)} disabled={saving}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
