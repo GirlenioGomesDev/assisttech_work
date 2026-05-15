@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Users, Smartphone, FileText, Wrench, DollarSign, Package, UserCog, BarChart3, LogOut, Menu, X } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, Smartphone, FileText, Wrench, DollarSign, Package, UserCog, BarChart3, LogOut, Menu, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useState } from 'react';
 
@@ -11,9 +11,11 @@ const navigation = [
   { name: 'Ordens de Serviço', href: '/ordens-servico', icon: FileText, roles: ['admin','atendente','tecnico'] },
   { name: 'Nova OS', href: '/nova-os', icon: Wrench, roles: ['admin','atendente'] },
   { name: 'Pagamentos', href: '/pagamentos', icon: DollarSign, roles: ['admin','financeiro'] },
+  { name: 'Estoque', href: '/estoque', icon: Package, roles: ['admin','atendente','financeiro'] },
   { name: 'Entregas', href: '/entregas', icon: Package, roles: ['admin','atendente'] },
   { name: 'Usuários', href: '/usuarios', icon: UserCog, roles: ['admin'] },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3, roles: ['admin','financeiro'] },
+  { name: 'Auditoria', href: '/auditoria', icon: ClipboardList, roles: ['admin'] },
 ];
 
 export function MainLayout() {

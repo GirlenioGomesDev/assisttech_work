@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2, FileImage, Video, MessageCircle } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
+import { AttachmentData, AttachmentInput } from '../components/AttachmentInput';
 
 const statusOptions = [
   { value: 'aberta', label: 'Aberta', color: 'bg-blue-100 text-blue-800' },
@@ -57,6 +58,7 @@ interface OrdemServico {
     observacoes_tecnicas?: string;
     testes_realizados?: string[];
     pecas_necessarias?: string[];
+    anexos_avaliacao?: AttachmentData[];
     data_diagnostico?: string;
   };
   orcamento?: {
@@ -73,6 +75,7 @@ interface OrdemServico {
     pecas_trocadas?: string;
     testes_finais?: string;
     observacoes?: string;
+    anexos_servico?: AttachmentData[];
     data_conclusao?: string;
   };
   pagamento?: {
@@ -111,6 +114,8 @@ export function DetalhesOS() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [relatorioMensagem, setRelatorioMensagem] = useState('');
+  const [relatorioTelefone, setRelatorioTelefone] = useState('');
 
   const [diagnostico, setDiagnostico] = useState({
     defeito_identificado: '',
@@ -119,6 +124,7 @@ export function DetalhesOS() {
     observacoes_tecnicas: '',
     testes_realizados: '',
     pecas_necessarias: '',
+    anexos_avaliacao: [] as AttachmentData[],
   });
 
   const [orcamento, setOrcamento] = useState({
@@ -133,6 +139,7 @@ export function DetalhesOS() {
     pecas_trocadas: '',
     testes_finais: '',
     observacoes: '',
+    anexos_servico: [] as AttachmentData[],
     data_conclusao: '',
   });
 
@@ -184,6 +191,7 @@ export function DetalhesOS() {
         observacoes_tecnicas: data.diagnostico?.observacoes_tecnicas || '',
         testes_realizados: (data.diagnostico?.testes_realizados || []).join(', '),
         pecas_necessarias: (data.diagnostico?.pecas_necessarias || []).join(', '),
+        anexos_avaliacao: data.diagnostico?.anexos_avaliacao || [],
       });
       setOrcamento({
         valor_mao_obra: String(data.orcamento?.valor_mao_obra || 0),
@@ -196,6 +204,7 @@ export function DetalhesOS() {
         pecas_trocadas: data.servico_executado?.pecas_trocadas || '',
         testes_finais: data.servico_executado?.testes_finais || '',
         observacoes: data.servico_executado?.observacoes || '',
+        anexos_servico: data.servico_executado?.anexos_servico || [],
         data_conclusao: data.servico_executado?.data_conclusao ? new Date(data.servico_executado.data_conclusao).toISOString().slice(0, 16) : '',
       });
       setPagamento({
@@ -244,8 +253,10 @@ export function DetalhesOS() {
   const canAlterarStatus = hasAnyRole('admin', 'tecnico', 'atendente');
   const canEditarOS = hasAnyRole('admin', 'atendente');
   const canExcluirOS = hasAnyRole('admin');
-  const canVerOrcamento = hasAnyRole('admin', 'tecnico', 'atendente');
+  const canEditarOrcamento = hasAnyRole('admin', 'tecnico', 'atendente');
+  const canVerOrcamento = canEditarOrcamento;
   const canVerFinalizacao = hasAnyRole('admin', 'financeiro', 'atendente');
+  const canVerRelatorio = hasAnyRole('admin', 'tecnico', 'atendente');
 
   const formatarData = (data?: string) => {
     if (!data) return 'Não informado';
@@ -289,6 +300,7 @@ export function DetalhesOS() {
         observacoes_tecnicas: diagnostico.observacoes_tecnicas,
         testes_realizados: diagnostico.testes_realizados.split(',').map((item) => item.trim()).filter(Boolean),
         pecas_necessarias: diagnostico.pecas_necessarias.split(',').map((item) => item.trim()).filter(Boolean),
+        anexos_avaliacao: diagnostico.anexos_avaliacao,
         data_diagnostico: new Date().toISOString(),
       }),
     });
@@ -319,6 +331,32 @@ export function DetalhesOS() {
     }
   };
 
+  const carregarRelatorioWhatsApp = async () => {
+    try {
+      setSaving(true);
+      const data = await apiRequest(`/os/${id}/whatsapp/avaliacao`);
+      setRelatorioMensagem(data.mensagem || '');
+      setRelatorioTelefone(data.telefone || '');
+    } catch (error: any) {
+      alert(error.message || 'Erro ao carregar relatório');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const enviarRelatorioBusiness = async () => {
+    try {
+      setSaving(true);
+      await apiRequest(`/os/${id}/whatsapp/avaliacao/enviar`, { method: 'POST' });
+      alert('Relatório enviado pelo WhatsApp Business');
+      await carregarOS();
+    } catch (error: any) {
+      alert(error.message || 'Erro ao enviar pelo WhatsApp Business');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const aprovarOrcamento = (status: 'aprovado' | 'rejeitado') => withSave(async () => {
     await apiRequest(`/os/${id}/orcamento/aprovacao`, {
       method: 'PATCH',
@@ -338,6 +376,7 @@ export function DetalhesOS() {
       method: 'PATCH',
       body: JSON.stringify({
         ...servico,
+        anexos_servico: servico.anexos_servico,
         data_conclusao: servico.data_conclusao || new Date().toISOString(),
       }),
     });
@@ -582,6 +621,7 @@ export function DetalhesOS() {
               {canVerOrcamento && <TabsTrigger value="orcamento">Orçamento</TabsTrigger>}
               {canDiagnosticar && <TabsTrigger value="execucao">Execução</TabsTrigger>}
               {canVerFinalizacao && <TabsTrigger value="finalizacao">Finalização</TabsTrigger>}
+              {canVerRelatorio && <TabsTrigger value="relatorio">Relatório</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="geral" className="space-y-4">
@@ -654,6 +694,18 @@ export function DetalhesOS() {
                   <div className="space-y-2"><Label>Testes realizados</Label><Input value={diagnostico.testes_realizados} onChange={(e) => setDiagnostico({ ...diagnostico, testes_realizados: e.target.value })} placeholder="Separe por vírgula" disabled={!canDiagnosticar || saving} /></div>
                   <div className="space-y-2"><Label>Peças necessárias</Label><Input value={diagnostico.pecas_necessarias} onChange={(e) => setDiagnostico({ ...diagnostico, pecas_necessarias: e.target.value })} placeholder="Separe por vírgula" disabled={!canDiagnosticar || saving} /></div>
                   <div className="space-y-2"><Label>Observações técnicas</Label><Textarea value={diagnostico.observacoes_tecnicas} onChange={(e) => setDiagnostico({ ...diagnostico, observacoes_tecnicas: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
+                  <div className="space-y-2">
+                    <Label>Fotos da avaliação</Label>
+                    <AttachmentInput
+                      value={diagnostico.anexos_avaliacao}
+                      onChange={(anexos) => setDiagnostico({ ...diagnostico, anexos_avaliacao: anexos })}
+                      disabled={!canDiagnosticar || saving}
+                      accept="image/*"
+                      allowedKinds={['image']}
+                      buttonLabel="Adicionar foto da avaliação"
+                      maxFiles={6}
+                    />
+                  </div>
                   {canDiagnosticar ? <Button onClick={salvarDiagnostico} disabled={saving}><Save className="h-4 w-4 mr-2" />Salvar diagnóstico</Button> : <p className="text-sm text-gray-500">Somente técnico ou administrador podem editar o diagnóstico.</p>}
                 </CardContent>
               </Card>
@@ -664,14 +716,14 @@ export function DetalhesOS() {
                 <CardHeader><CardTitle>Orçamento</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Valor mão de obra</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_mao_obra} onChange={(e) => setOrcamento({ ...orcamento, valor_mao_obra: onlyDigits(e.target.value) })} disabled={!canDiagnosticar || saving} /></div>
-                    <div className="space-y-2"><Label>Valor de peças</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_pecas} onChange={(e) => setOrcamento({ ...orcamento, valor_pecas: onlyDigits(e.target.value) })} disabled={!canDiagnosticar || saving} /></div>
+                    <div className="space-y-2"><Label>Valor mão de obra</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_mao_obra} onChange={(e) => setOrcamento({ ...orcamento, valor_mao_obra: onlyDigits(e.target.value) })} disabled={!canEditarOrcamento || saving} /></div>
+                    <div className="space-y-2"><Label>Valor de peças</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={orcamento.valor_pecas} onChange={(e) => setOrcamento({ ...orcamento, valor_pecas: onlyDigits(e.target.value) })} disabled={!canEditarOrcamento || saving} /></div>
                   </div>
                   <div className="space-y-2"><Label>Status da aprovação</Label><Select value={orcamento.status_aprovacao} onValueChange={(value) => setOrcamento({ ...orcamento, status_aprovacao: value })} disabled={!canAprovar || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="aprovado">Aprovado</SelectItem><SelectItem value="rejeitado">Rejeitado</SelectItem></SelectContent></Select></div>
                   <div className="space-y-2"><Label>Observação da aprovação</Label><Textarea value={orcamento.observacao_aprovacao} onChange={(e) => setOrcamento({ ...orcamento, observacao_aprovacao: e.target.value })} disabled={!(canAprovar || canDiagnosticar) || saving} /></div>
                   <div className="rounded-lg border p-4 bg-gray-50"><p className="text-sm text-gray-600">Total estimado</p><p className="text-xl font-medium">{moeda(Number(orcamento.valor_mao_obra || 0) + Number(orcamento.valor_pecas || 0))}</p></div>
                   <div className="flex flex-wrap gap-2">
-                    {canDiagnosticar && <Button onClick={salvarOrcamento} disabled={saving}><DollarSign className="h-4 w-4 mr-2" />Salvar orçamento</Button>}
+                    {canEditarOrcamento && <Button onClick={salvarOrcamento} disabled={saving}><DollarSign className="h-4 w-4 mr-2" />Salvar orçamento</Button>}
                     {(canDiagnosticar || canAprovar) && <Button variant="outline" onClick={enviarAvaliacaoWhatsApp} disabled={saving}><MessageCircle className="h-4 w-4 mr-2" />Enviar avaliação no WhatsApp</Button>}
                     {canAprovar && <><Button variant="outline" onClick={() => aprovarOrcamento('aprovado')} disabled={saving}><CheckCircle className="h-4 w-4 mr-2" />Aprovar</Button><Button variant="outline" onClick={() => aprovarOrcamento('rejeitado')} disabled={saving}>Rejeitar</Button></>}
                   </div>
@@ -687,6 +739,18 @@ export function DetalhesOS() {
                   <div className="space-y-2"><Label>Peças trocadas</Label><Input value={servico.pecas_trocadas} onChange={(e) => setServico({ ...servico, pecas_trocadas: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
                   <div className="space-y-2"><Label>Testes finais</Label><Textarea value={servico.testes_finais} onChange={(e) => setServico({ ...servico, testes_finais: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
                   <div className="space-y-2"><Label>Observações</Label><Textarea value={servico.observacoes} onChange={(e) => setServico({ ...servico, observacoes: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
+                  <div className="space-y-2">
+                    <Label>Fotos do serviço feito</Label>
+                    <AttachmentInput
+                      value={servico.anexos_servico}
+                      onChange={(anexos) => setServico({ ...servico, anexos_servico: anexos })}
+                      disabled={!canDiagnosticar || saving}
+                      accept="image/*"
+                      allowedKinds={['image']}
+                      buttonLabel="Adicionar foto do serviço"
+                      maxFiles={6}
+                    />
+                  </div>
                   <div className="space-y-2"><Label>Data de conclusão</Label><Input type="datetime-local" value={servico.data_conclusao} onChange={(e) => setServico({ ...servico, data_conclusao: e.target.value })} disabled={!canDiagnosticar || saving} /></div>
                   {canDiagnosticar ? <Button onClick={salvarServico} disabled={saving}><Wrench className="h-4 w-4 mr-2" />Salvar execução</Button> : <p className="text-sm text-gray-500">Somente técnico ou administrador podem editar esta etapa.</p>}
                 </CardContent>
@@ -722,6 +786,63 @@ export function DetalhesOS() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {canVerRelatorio && (
+              <TabsContent value="relatorio" className="space-y-4">
+                <Card>
+                  <CardHeader><CardTitle>Relatório da avaliação</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <p><strong>Cliente:</strong> {os.cliente?.nome || 'Não informado'}</p>
+                      <p><strong>WhatsApp:</strong> {formatPhone(os.cliente?.whatsapp || os.cliente?.telefone || '') || 'Não informado'}</p>
+                      <p><strong>Problema:</strong> {os.diagnostico?.defeito_identificado || 'Pendente'}</p>
+                      <p><strong>Total:</strong> {moeda(os.orcamento?.valor_total)}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Mensagem que será enviada</Label>
+                      <Textarea
+                        value={relatorioMensagem || 'Clique em "Carregar relatório" para gerar a mensagem com os dados salvos.'}
+                        readOnly
+                        rows={10}
+                      />
+                    </div>
+
+                    {relatorioTelefone && <p className="text-sm text-gray-600">Destino: {formatPhone(relatorioTelefone)}</p>}
+
+                    {os.diagnostico?.anexos_avaliacao && os.diagnostico.anexos_avaliacao.length > 0 && (
+                      <div className="space-y-3">
+                        <Label>Fotos anexadas ao relatório</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {os.diagnostico.anexos_avaliacao.map((anexo, index) => (
+                            <div key={anexo.id || anexo.nome || index} className="rounded-md border p-3">
+                              <div className="mb-2 flex items-center gap-2">
+                                <FileImage className="h-4 w-4 text-emerald-600" />
+                                <p className="truncate text-sm font-medium text-gray-900">{anexo.nome}</p>
+                              </div>
+                              <img src={anexo.conteudo} alt={anexo.nome} className="h-44 w-full rounded-md bg-gray-100 object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={carregarRelatorioWhatsApp} disabled={saving}>
+                        Carregar relatório
+                      </Button>
+                      <Button type="button" onClick={enviarRelatorioBusiness} disabled={saving}>
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Enviar pela API Business
+                      </Button>
+                      <Button type="button" variant="outline" onClick={enviarAvaliacaoWhatsApp} disabled={saving}>
+                        Abrir no WhatsApp Web
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 

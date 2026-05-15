@@ -15,7 +15,13 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.erro || data.mensagem || 'Erro na requisição');
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') window.location.href = '/login';
+    }
+
+    throw new Error(data.erro || data.mensagem || 'Erro na requisicao');
   }
 
   return data;

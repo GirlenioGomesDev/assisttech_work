@@ -1,6 +1,7 @@
 const Cliente = require('../models/Cliente');
 const gerarCodigo = require('../utils/gerarCodigo');
 const onlyDigits = require('../utils/onlyDigits');
+const registrarAuditoria = require('../utils/auditoria');
 
 const sanitizeCliente = (data) => {
   const sanitized = { ...data };
@@ -21,6 +22,13 @@ exports.criarCliente = async (req, res) => {
     });
 
     await cliente.save();
+    await registrarAuditoria(req, {
+      acao: 'cliente_criado',
+      entidade: 'cliente',
+      entidade_id: cliente._id,
+      entidade_codigo: cliente.id_cliente,
+      descricao: `Cadastrou o cliente ${cliente.nome}`,
+    });
     res.status(201).json(cliente);
   } catch (error) {
     res.status(500).json({ erro: error.message });
@@ -49,6 +57,13 @@ exports.atualizarCliente = async (req, res) => {
   try {
     const c = await Cliente.findByIdAndUpdate(req.params.id, sanitizeCliente(req.body), { new: true });
     if (!c) return res.status(404).json({ erro: 'Cliente nao encontrado' });
+    await registrarAuditoria(req, {
+      acao: 'cliente_atualizado',
+      entidade: 'cliente',
+      entidade_id: c._id,
+      entidade_codigo: c.id_cliente,
+      descricao: `Atualizou o cliente ${c.nome}`,
+    });
     res.json(c);
   } catch (error) {
     res.status(500).json({ erro: error.message });
@@ -59,6 +74,13 @@ exports.deletarCliente = async (req, res) => {
   try {
     const c = await Cliente.findByIdAndDelete(req.params.id);
     if (!c) return res.status(404).json({ erro: 'Cliente nao encontrado' });
+    await registrarAuditoria(req, {
+      acao: 'cliente_removido',
+      entidade: 'cliente',
+      entidade_id: c._id,
+      entidade_codigo: c.id_cliente,
+      descricao: `Removeu o cliente ${c.nome}`,
+    });
     res.json({ mensagem: 'Cliente removido com sucesso' });
   } catch (error) {
     res.status(500).json({ erro: error.message });

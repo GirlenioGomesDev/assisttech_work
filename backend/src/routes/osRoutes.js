@@ -9,8 +9,9 @@ router.get('/:id', auth, permit('admin','atendente','tecnico','financeiro'), o.b
 router.put('/:id', auth, permit('admin','atendente'), o.atualizarOS);
 router.patch('/:id/status', auth, permit('admin','tecnico','atendente'), o.atualizarStatusOS);
 router.patch('/:id/diagnostico', auth, permit('admin','tecnico'), o.salvarDiagnostico);
-router.patch('/:id/orcamento', auth, permit('admin','tecnico'), o.salvarOrcamento);
+router.patch('/:id/orcamento', auth, permit('admin','tecnico','atendente'), o.salvarOrcamento);
 router.get('/:id/whatsapp/avaliacao', auth, permit('admin','tecnico','atendente'), o.gerarWhatsAppAvaliacao);
+router.post('/:id/whatsapp/avaliacao/enviar', auth, permit('admin','tecnico','atendente'), o.enviarWhatsAppAvaliacao);
 router.patch('/:id/orcamento/aprovacao', auth, permit('admin','atendente'), o.aprovarOrcamento);
 router.post('/:id/pecas', auth, permit('admin','tecnico'), o.adicionarPeca);
 router.put('/:id/pecas/:id_peca', auth, permit('admin','tecnico'), o.atualizarPeca);

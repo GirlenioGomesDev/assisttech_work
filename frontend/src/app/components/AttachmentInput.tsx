@@ -18,6 +18,9 @@ interface AttachmentInputProps {
   maxFiles?: number;
   maxFileSizeMb?: number;
   maxTotalSizeMb?: number;
+  accept?: string;
+  allowedKinds?: Array<'image' | 'video'>;
+  buttonLabel?: string;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -40,6 +43,9 @@ export function AttachmentInput({
   maxFiles = 6,
   maxFileSizeMb = 5,
   maxTotalSizeMb = 10,
+  accept = 'image/*,video/*',
+  allowedKinds = ['image', 'video'],
+  buttonLabel = 'Adicionar imagem ou vídeo',
 }: AttachmentInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -59,12 +65,12 @@ export function AttachmentInput({
     const currentTotal = value.reduce((sum, attachment) => sum + attachment.tamanho, 0);
     const selectedTotal = selectedFiles.reduce((sum, file) => sum + file.size, 0);
     const invalidFile = selectedFiles.find(
-      (file) => !file.type.startsWith('image/') && !file.type.startsWith('video/')
+      (file) => !allowedKinds.some((kind) => file.type.startsWith(`${kind}/`))
     );
     const oversizedFile = selectedFiles.find((file) => file.size > maxBytes);
 
     if (invalidFile) {
-      alert('Selecione apenas imagens ou vídeos');
+      alert(allowedKinds.length === 1 && allowedKinds[0] === 'image' ? 'Selecione apenas imagens' : 'Selecione apenas imagens ou vídeos');
       return;
     }
 
@@ -109,7 +115,7 @@ export function AttachmentInput({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,video/*"
+        accept={accept}
         multiple
         className="hidden"
         onChange={(event) => handleFiles(event.target.files)}
@@ -123,7 +129,7 @@ export function AttachmentInput({
         disabled={disabled || loading || value.length >= maxFiles}
       >
         <Upload className="h-4 w-4" />
-        {loading ? 'Carregando...' : 'Adicionar imagem ou vídeo'}
+        {loading ? 'Carregando...' : buttonLabel}
       </Button>
 
       <p className="text-xs text-gray-500">
