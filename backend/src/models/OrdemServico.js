@@ -15,6 +15,7 @@ const PecaSchema = new mongoose.Schema({ id_peca: String, nome_peca: String, tip
 const ServicoExecutadoSchema = new mongoose.Schema({ id_servico: String, descricao_servico: String, data_inicio: Date, data_fim: Date, testes_finais: [String], observacoes_finais: String }, { _id: false });
 const PagamentoSchema = new mongoose.Schema({ id_pagamento: String, valor_bruto: { type: Number, default: 0 }, desconto: { type: Number, default: 0 }, valor_final: { type: Number, default: 0 }, forma_pagamento: { type: String, enum: ['pix', 'dinheiro', 'cartao_credito', 'cartao_debito', 'boleto', null], default: null }, status_pagamento: { type: String, enum: ['pendente', 'parcial', 'pago'], default: 'pendente' }, data_pagamento: Date }, { _id: false });
 const EntregaSchema = new mongoose.Schema({ id_entrega: String, data_entrega: Date, nome_retirada: String, documento_retirada: String, observacoes_entrega: String }, { _id: false });
+const AnexoSchema = new mongoose.Schema({ id_anexo: String, nome: String, tipo: String, tamanho: Number, conteudo: String, criadoEm: { type: Date, default: Date.now } }, { _id: false });
 const HistoricoStatusSchema = new mongoose.Schema({ status: String, data: { type: Date, default: Date.now }, usuario: String }, { _id: false });
 const LogSchema = new mongoose.Schema({ acao: String, usuario: String, data: { type: Date, default: Date.now } }, { _id: false });
 
@@ -31,6 +32,7 @@ const OrdemServicoSchema = new mongoose.Schema({
   prioridade: { type: String, enum: ['baixa','media','alta','urgente'], default: 'media' },
   prazo_estimado: Date, observacoes_gerais: String, data_conclusao: Date, data_entrega: Date,
   diagnostico: DiagnosticoSchema, orcamento: OrcamentoSchema, pecas_utilizadas: [PecaSchema], servico_executado: ServicoExecutadoSchema, pagamento: PagamentoSchema, entrega: EntregaSchema,
+  anexos: [AnexoSchema],
   historico_status: [HistoricoStatusSchema], logs: [LogSchema]
 }, { timestamps: true });
 

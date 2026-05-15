@@ -33,6 +33,7 @@ async function seedAdmin() {
       email: ADMIN_EMAIL,
       login: ADMIN_LOGIN,
       perfil: 'admin',
+      perfis: ['admin'],
       ativo: true,
       senha_hash,
     });

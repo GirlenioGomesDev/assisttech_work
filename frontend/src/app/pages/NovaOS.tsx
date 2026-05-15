@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { CheckCircle, Search, UserCheck } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
+import { AttachmentData, AttachmentInput } from '../components/AttachmentInput';
 
 interface Cliente {
   _id: string;
@@ -25,6 +26,7 @@ interface Usuario {
   id_usuario: string;
   nome: string;
   perfil: string;
+  perfis?: string[];
 }
 
 export function NovaOS() {
@@ -35,6 +37,7 @@ export function NovaOS() {
   const [loading, setLoading] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [clienteSearch, setClienteSearch] = useState('');
+  const [anexos, setAnexos] = useState<AttachmentData[]>([]);
 
   const [formData, setFormData] = useState({
     clienteId: '',
@@ -69,7 +72,10 @@ export function NovaOS() {
       ]);
 
       setClientes(clientesData || []);
-      setTecnicos((usuariosData || []).filter((u: Usuario) => u.perfil === 'tecnico'));
+      setTecnicos((usuariosData || []).filter((u: Usuario) => {
+        const perfis = u.perfis?.length ? u.perfis : [u.perfil];
+        return perfis.includes('tecnico');
+      }));
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar clientes e técnicos');
@@ -172,6 +178,7 @@ export function NovaOS() {
           defeito_relatado_inicial:
             formData.defeito_relatado_inicial || formData.defeito_relatado,
         },
+        anexos,
       };
 
       await apiRequest('/os', {
@@ -468,10 +475,20 @@ export function NovaOS() {
               </CardContent>
             </Card>
 
+            {/* Anexos */}
+            <Card>
+              <CardHeader>
+                <CardTitle>4. Anexos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AttachmentInput value={anexos} onChange={setAnexos} disabled={loading} />
+              </CardContent>
+            </Card>
+
             {/* Observações */}
             <Card>
               <CardHeader>
-                <CardTitle>4. Observações (Opcional)</CardTitle>
+                <CardTitle>5. Observações (Opcional)</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea

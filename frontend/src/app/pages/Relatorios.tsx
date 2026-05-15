@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { FileText, DollarSign, Wrench, TrendingUp } from 'lucide-react';
 import { mockOrdensServico, statusLabels } from '../data/mockData';
+import { AttachmentData, AttachmentInput } from '../components/AttachmentInput';
 
 export function Relatorios() {
+  const [anexosRelatorio, setAnexosRelatorio] = useState<AttachmentData[]>([]);
+
   // Dados para gráfico de serviços por status
   const servicosPorStatus = Object.entries(
     mockOrdensServico.reduce((acc, os) => {
@@ -53,6 +57,15 @@ export function Relatorios() {
           </SelectContent>
         </Select>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Anexos do Relatório</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AttachmentInput value={anexosRelatorio} onChange={setAnexosRelatorio} />
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -37,8 +37,9 @@ export function Clientes() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const canEditCliente = ['admin', 'atendente'].includes(user?.perfil);
-  const canDeleteCliente = user?.perfil === 'admin';
+  const userPerfis = user?.perfis?.length ? user.perfis : user ? [user.perfil] : [];
+  const canEditCliente = userPerfis.some((perfil: string) => ['admin', 'atendente'].includes(perfil));
+  const canDeleteCliente = userPerfis.includes('admin');
 
   const [formData, setFormData] = useState({
     nome: '',

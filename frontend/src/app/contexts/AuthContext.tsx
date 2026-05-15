@@ -6,6 +6,7 @@ interface User {
   nome: string;
   email: string;
   perfil: 'admin' | 'atendente' | 'tecnico' | 'financeiro';
+  perfis?: Array<'admin' | 'atendente' | 'tecnico' | 'financeiro'>;
 }
 
 interface AuthContextType {
@@ -47,7 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const hasRole = (...roles: string[]) => !!user && roles.includes(user.perfil);
+  const hasRole = (...roles: string[]) => {
+    if (!user) return false;
+    const perfis = user.perfis?.length ? user.perfis : [user.perfil];
+    return perfis.some((perfil) => roles.includes(perfil));
+  };
 
   return <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, hasRole }}>{children}</AuthContext.Provider>;
 }

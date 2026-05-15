@@ -21,7 +21,8 @@ function hasRole(roles?: string[]) {
   const raw = localStorage.getItem('user');
   if (!raw) return false;
   const user = JSON.parse(raw);
-  return roles.includes(user.perfil);
+  const perfis = user.perfis?.length ? user.perfis : [user.perfil];
+  return perfis.some((perfil: string) => roles.includes(perfil));
 }
 function ProtectedRoute({ roles }: { roles?: string[] }) {
   if (!isAuthed()) return <Navigate to="/login" replace />;

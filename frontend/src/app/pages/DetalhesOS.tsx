@@ -9,7 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2, FileImage, Video, MessageCircle } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 
@@ -36,6 +36,7 @@ interface OrdemServico {
   observacoes_gerais?: string;
   createdAt?: string;
   data_entrega?: string;
+  anexos?: Array<{ id_anexo?: string; nome?: string; tipo?: string; tamanho?: number; conteudo?: string; criadoEm?: string }>;
   cliente?: { nome?: string; telefone?: string; whatsapp?: string; email?: string };
   tecnico?: { nome?: string };
   aparelho?: {
@@ -234,13 +235,17 @@ export function DetalhesOS() {
     }
   };
 
-  const canDiagnosticar = ['admin', 'tecnico'].includes(user?.perfil);
-  const canAprovar = ['admin', 'atendente'].includes(user?.perfil);
-  const canFinanceiro = ['admin', 'financeiro'].includes(user?.perfil);
-  const canEntregar = ['admin', 'atendente'].includes(user?.perfil);
-  const canAlterarStatus = ['admin', 'tecnico', 'atendente'].includes(user?.perfil);
-  const canEditarOS = ['admin', 'atendente'].includes(user?.perfil);
-  const canExcluirOS = user?.perfil === 'admin';
+  const userPerfis = user?.perfis?.length ? user.perfis : user ? [user.perfil] : [];
+  const hasAnyRole = (...roles: string[]) => userPerfis.some((perfil: string) => roles.includes(perfil));
+  const canDiagnosticar = hasAnyRole('admin', 'tecnico');
+  const canAprovar = hasAnyRole('admin', 'atendente');
+  const canFinanceiro = hasAnyRole('admin', 'financeiro');
+  const canEntregar = hasAnyRole('admin', 'atendente');
+  const canAlterarStatus = hasAnyRole('admin', 'tecnico', 'atendente');
+  const canEditarOS = hasAnyRole('admin', 'atendente');
+  const canExcluirOS = hasAnyRole('admin');
+  const canVerOrcamento = hasAnyRole('admin', 'tecnico', 'atendente');
+  const canVerFinalizacao = hasAnyRole('admin', 'financeiro', 'atendente');
 
   const formatarData = (data?: string) => {
     if (!data) return 'Não informado';
@@ -249,6 +254,12 @@ export function DetalhesOS() {
   };
 
   const moeda = (valor?: number) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatarTamanho = (bytes?: number) => {
+    const valor = Number(bytes || 0);
+    if (!valor) return '0 KB';
+    if (valor < 1024 * 1024) return `${(valor / 1024).toFixed(1)} KB`;
+    return `${(valor / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const statusAtual = useMemo(
     () => statusOptions.find((item) => item.value === os?.status) || statusOptions[0],
@@ -295,6 +306,18 @@ export function DetalhesOS() {
       }),
     });
   }, 'Orçamento salvo com sucesso');
+
+  const enviarAvaliacaoWhatsApp = async () => {
+    try {
+      setSaving(true);
+      const data = await apiRequest(`/os/${id}/whatsapp/avaliacao`);
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch (error: any) {
+      alert(error.message || 'Erro ao preparar mensagem do WhatsApp');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const aprovarOrcamento = (status: 'aprovado' | 'rejeitado') => withSave(async () => {
     await apiRequest(`/os/${id}/orcamento/aprovacao`, {
@@ -553,12 +576,12 @@ export function DetalhesOS() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="geral" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="flex h-auto w-full flex-wrap justify-start">
               <TabsTrigger value="geral">Geral</TabsTrigger>
-              <TabsTrigger value="diagnostico">Diagnóstico</TabsTrigger>
-              <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
-              <TabsTrigger value="execucao">Execução</TabsTrigger>
-              <TabsTrigger value="finalizacao">Finalização</TabsTrigger>
+              {canDiagnosticar && <TabsTrigger value="diagnostico">Diagnóstico</TabsTrigger>}
+              {canVerOrcamento && <TabsTrigger value="orcamento">Orçamento</TabsTrigger>}
+              {canDiagnosticar && <TabsTrigger value="execucao">Execução</TabsTrigger>}
+              {canVerFinalizacao && <TabsTrigger value="finalizacao">Finalização</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="geral" className="space-y-4">
@@ -592,6 +615,33 @@ export function DetalhesOS() {
                   {os.observacoes_gerais && <p><strong>Observações:</strong> {os.observacoes_gerais}</p>}
                 </CardContent>
               </Card>
+
+              {os.anexos && os.anexos.length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle>Anexos</CardTitle></CardHeader>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {os.anexos.map((anexo, index) => {
+                      const isVideo = anexo.tipo?.startsWith('video/');
+                      return (
+                        <div key={anexo.id_anexo || `${anexo.nome}-${index}`} className="rounded-md border p-3">
+                          <div className="mb-3 flex items-center gap-2">
+                            {isVideo ? <Video className="h-4 w-4 text-blue-600" /> : <FileImage className="h-4 w-4 text-emerald-600" />}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-gray-900">{anexo.nome || 'Anexo'}</p>
+                              <p className="text-xs text-gray-500">{formatarTamanho(anexo.tamanho)}</p>
+                            </div>
+                          </div>
+                          {isVideo ? (
+                            <video src={anexo.conteudo} controls className="h-44 w-full rounded-md bg-gray-100 object-cover" />
+                          ) : (
+                            <img src={anexo.conteudo} alt={anexo.nome || 'Anexo'} className="h-44 w-full rounded-md bg-gray-100 object-cover" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="diagnostico" className="space-y-4">
@@ -622,6 +672,7 @@ export function DetalhesOS() {
                   <div className="rounded-lg border p-4 bg-gray-50"><p className="text-sm text-gray-600">Total estimado</p><p className="text-xl font-medium">{moeda(Number(orcamento.valor_mao_obra || 0) + Number(orcamento.valor_pecas || 0))}</p></div>
                   <div className="flex flex-wrap gap-2">
                     {canDiagnosticar && <Button onClick={salvarOrcamento} disabled={saving}><DollarSign className="h-4 w-4 mr-2" />Salvar orçamento</Button>}
+                    {(canDiagnosticar || canAprovar) && <Button variant="outline" onClick={enviarAvaliacaoWhatsApp} disabled={saving}><MessageCircle className="h-4 w-4 mr-2" />Enviar avaliação no WhatsApp</Button>}
                     {canAprovar && <><Button variant="outline" onClick={() => aprovarOrcamento('aprovado')} disabled={saving}><CheckCircle className="h-4 w-4 mr-2" />Aprovar</Button><Button variant="outline" onClick={() => aprovarOrcamento('rejeitado')} disabled={saving}>Rejeitar</Button></>}
                   </div>
                 </CardContent>
@@ -701,6 +752,7 @@ export function DetalhesOS() {
               <p><strong>Aprovação:</strong> {os.orcamento?.status_aprovacao || 'pendente'}</p>
               <p><strong>Pagamento:</strong> {os.pagamento?.status_pagamento || 'pendente'}</p>
               <p><strong>Entrega:</strong> {os.entrega?.data_entrega ? 'Registrada' : 'Pendente'}</p>
+              <p><strong>Anexos:</strong> {os.anexos?.length || 0}</p>
             </CardContent>
           </Card>
 

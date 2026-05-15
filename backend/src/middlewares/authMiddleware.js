@@ -15,7 +15,8 @@ function auth(req, res, next) {
 function permit(...roles) {
   return (req, res, next) => {
     if (!req.usuario) return res.status(401).json({ erro: 'Não autenticado' });
-    if (!roles.includes(req.usuario.perfil)) return res.status(403).json({ erro: 'Sem permissão para acessar este recurso' });
+    const perfis = Array.isArray(req.usuario.perfis) && req.usuario.perfis.length ? req.usuario.perfis : [req.usuario.perfil];
+    if (!perfis.some((perfil) => roles.includes(perfil))) return res.status(403).json({ erro: 'Sem permissão para acessar este recurso' });
     next();
   };
 }
