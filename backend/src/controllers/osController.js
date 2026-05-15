@@ -199,7 +199,7 @@ const enviarImagemWhatsAppBusiness = async ({ telefone, mediaId, caption }) => {
   return data;
 };
 
-const carregarRelatorioWhatsApp = async (id) => {
+const carregarRelatorioWhatsApp = async (id, mensagemPersonalizada) => {
   const os = await OrdemServico.findById(id);
   if (!os) {
     const error = new Error('OS não encontrada');
@@ -223,7 +223,7 @@ const carregarRelatorioWhatsApp = async (id) => {
   return {
     os,
     telefone,
-    mensagem: montarMensagemAvaliacao(os),
+    mensagem: mensagemPersonalizada || montarMensagemAvaliacao(os),
   };
 };
 
@@ -319,7 +319,7 @@ exports.gerarWhatsAppAvaliacao = async (req, res) => {
 };
 exports.enviarWhatsAppAvaliacao = async (req, res) => {
   try {
-    const { os, telefone, mensagem } = await carregarRelatorioWhatsApp(req.params.id);
+    const { os, telefone, mensagem } = await carregarRelatorioWhatsApp(req.params.id, req.body?.mensagem);
     const resultado = await enviarMensagemWhatsAppBusiness({ telefone, mensagem });
     const fotos = os.diagnostico?.anexos_avaliacao || [];
     const fotosEnviadas = [];

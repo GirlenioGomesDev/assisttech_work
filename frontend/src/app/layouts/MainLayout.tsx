@@ -9,6 +9,7 @@ const navigation = [
   { name: 'Clientes', href: '/clientes', icon: Users, roles: ['admin','atendente'] },
   { name: 'Aparelhos', href: '/aparelhos', icon: Smartphone, roles: ['admin','atendente','tecnico'] },
   { name: 'Ordens de Serviço', href: '/ordens-servico', icon: FileText, roles: ['admin','atendente','tecnico'] },
+  { name: 'Relatórios de Clientes', href: '/relatorios-clientes', icon: FileText, roles: ['admin','atendente','tecnico'] },
   { name: 'Nova OS', href: '/nova-os', icon: Wrench, roles: ['admin','atendente'] },
   { name: 'Pagamentos', href: '/pagamentos', icon: DollarSign, roles: ['admin','financeiro'] },
   { name: 'Estoque', href: '/estoque', icon: Package, roles: ['admin','atendente','financeiro'] },

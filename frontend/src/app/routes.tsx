@@ -10,6 +10,7 @@ import { Pagamentos } from './pages/Pagamentos';
 import { Entregas } from './pages/Entregas';
 import { Usuarios } from './pages/Usuarios';
 import { Relatorios } from './pages/Relatorios';
+import { RelatoriosClientes } from './pages/RelatoriosClientes';
 import { Estoque } from './pages/Estoque';
 import { Auditoria } from './pages/Auditoria';
 import { HistoricoCliente } from './pages/HistoricoCliente';
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: '/aparelhos', Component: Aparelhos },
       { path: '/ordens-servico', Component: OrdensServico },
       { path: '/nova-os', Component: NovaOS },
+      { path: '/relatorios-clientes', Component: RelatoriosClientes },
       { path: '/pagamentos', Component: Pagamentos },
       { path: '/entregas', Component: Entregas },
       { path: '/relatorios', Component: Relatorios },
