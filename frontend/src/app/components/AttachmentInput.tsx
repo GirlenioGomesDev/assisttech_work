@@ -31,7 +31,6 @@ const formatFileSize = (bytes: number) => {
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
     reader.onload = () => {
       if (!reader.result) return reject(new Error('Conteúdo do arquivo vazio'));
       resolve(String(reader.result));

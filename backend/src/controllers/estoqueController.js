@@ -2,7 +2,6 @@ const EstoqueItem = require('../models/EstoqueItem');
 const gerarCodigo = require('../utils/gerarCodigo');
 const registrarAuditoria = require('../utils/auditoria');
 
-const toNumber = (value) => Number(value || 0);
 const toNumber = (value) => {
   const parsed = Number(value);
   return isNaN(parsed) ? 0 : parsed;
