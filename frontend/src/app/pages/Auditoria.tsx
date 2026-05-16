@@ -24,6 +24,65 @@ const formatarData = (data?: string) => {
   return new Date(data).toLocaleString('pt-BR');
 };
 
+const metadataLabels: Record<string, string> = {
+  aparelho: 'Aparelho',
+  cliente: 'Cliente',
+  data_entrega: 'Data da entrega',
+  defeito_identificado: 'Defeito identificado',
+  descricao_servico: 'Serviço executado',
+  forma_pagamento: 'Forma de pagamento',
+  fotos: 'Fotos',
+  pecas_trocadas: 'Peças trocadas',
+  quantidade: 'Quantidade',
+  recebedor_nome: 'Recebedor',
+  solucao_recomendada: 'Solução recomendada',
+  status: 'Status',
+  status_aprovacao: 'Status da aprovação',
+  status_pagamento: 'Status do pagamento',
+  tecnico: 'Técnico',
+  valor_final: 'Valor final',
+  valor_mao_obra: 'Valor da mão de obra',
+  valor_pecas: 'Valor das peças',
+  valor_total: 'Valor total',
+  valor_unitario: 'Valor unitário',
+};
+
+const currencyFields = new Set([
+  'valor_final',
+  'valor_mao_obra',
+  'valor_pecas',
+  'valor_total',
+  'valor_unitario',
+]);
+
+const formatarCampo = (campo: string) =>
+  metadataLabels[campo] ||
+  campo
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letra) => letra.toUpperCase());
+
+const formatarValorMetadata = (campo: string, valor: any) => {
+  if (valor === null || valor === undefined || valor === '') return 'Não informado';
+
+  if (currencyFields.has(campo)) {
+    const numero = Number(valor);
+    if (!Number.isNaN(numero)) {
+      return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+  }
+
+  if (campo.includes('data')) {
+    const data = new Date(valor);
+    if (!Number.isNaN(data.getTime())) return data.toLocaleString('pt-BR');
+  }
+
+  if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não';
+  if (Array.isArray(valor)) return valor.length ? valor.join(', ') : 'Nenhum';
+  if (typeof valor === 'object') return Object.values(valor).filter(Boolean).join(' - ') || 'Não informado';
+
+  return String(valor);
+};
+
 export function Auditoria() {
   const [registros, setRegistros] = useState<AuditoriaItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,9 +167,14 @@ export function Auditoria() {
                 </div>
 
                 {item.metadata && Object.keys(item.metadata).length > 0 && (
-                  <pre className="mt-3 overflow-x-auto rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-                    {JSON.stringify(item.metadata, null, 2)}
-                  </pre>
+                  <div className="mt-3 grid gap-2 rounded-md bg-gray-50 p-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {Object.entries(item.metadata).map(([campo, valor]) => (
+                      <div key={campo} className="min-w-0">
+                        <p className="text-xs font-medium text-gray-500">{formatarCampo(campo)}</p>
+                        <p className="break-words text-sm text-gray-800">{formatarValorMetadata(campo, valor)}</p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
