@@ -17,7 +17,7 @@ const backupRoutes = require('./routes/backupRoutes');
 
 const app = express();
 
-const defaultOrigins = 'http://localhost:5173,http://127.0.0.1:5173';
+const defaultOrigins = 'http://localhost:5173,http://127.0.0.1:5173,https://assisttech-work.vercel.app';
 const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || defaultOrigins)
   .split(',')
   .map((origin) => origin.trim())
