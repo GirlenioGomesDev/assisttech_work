@@ -5,6 +5,7 @@ const { permit } = require('../middlewares/authMiddleware');
 const c = require('../controllers/clienteController');
 router.post('/', auth, permit('admin','atendente'), c.criarCliente);
 router.get('/', auth, permit('admin','atendente','tecnico'), c.listarClientes);
+router.get('/:id/resumo', auth, permit('admin','atendente','tecnico','financeiro'), c.resumoCliente);
 router.get('/:id', auth, permit('admin','atendente','tecnico'), c.buscarClientePorId);
 router.put('/:id', auth, permit('admin','atendente'), c.atualizarCliente);
 router.delete('/:id', auth, permit('admin'), c.deletarCliente);

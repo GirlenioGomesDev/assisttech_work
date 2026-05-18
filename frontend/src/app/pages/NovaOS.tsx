@@ -68,14 +68,11 @@ export function NovaOS() {
 
       const [clientesData, usuariosData] = await Promise.all([
         apiRequest('/clientes'),
-        apiRequest('/usuarios'),
+        apiRequest('/usuarios/tecnicos'),
       ]);
 
       setClientes(clientesData || []);
-      setTecnicos((usuariosData || []).filter((u: Usuario) => {
-        const perfis = u.perfis?.length ? u.perfis : [u.perfil];
-        return perfis.includes('tecnico');
-      }));
+      setTecnicos(usuariosData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar clientes e técnicos');

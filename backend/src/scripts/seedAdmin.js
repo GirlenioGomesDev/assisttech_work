@@ -4,6 +4,23 @@ const conectarDB = require('../config/db');
 const Usuario = require('../models/Usuario');
 const gerarCodigo = require('../utils/gerarCodigo');
 
+async function gerarCodigoUsuarioLivre() {
+  const usuarios = await Usuario.find({ id_usuario: /^USR-\d+$/ }).select('id_usuario').lean();
+  const usados = new Set(usuarios.map((usuario) => usuario.id_usuario));
+  const maior = usuarios.reduce((max, usuario) => {
+    const numero = Number(String(usuario.id_usuario).replace('USR-', ''));
+    return Number.isFinite(numero) && numero > max ? numero : max;
+  }, 0);
+
+  let proximo = maior + 1;
+  let codigo = gerarCodigo('USR', proximo);
+  while (usados.has(codigo)) {
+    proximo += 1;
+    codigo = gerarCodigo('USR', proximo);
+  }
+  return codigo;
+}
+
 async function seedAdmin() {
   try {
     const { ADMIN_NOME, ADMIN_EMAIL, ADMIN_LOGIN, ADMIN_SENHA } = process.env;
@@ -24,11 +41,10 @@ async function seedAdmin() {
       process.exit(0);
     }
 
-    const total = await Usuario.countDocuments();
     const senha_hash = await bcrypt.hash(ADMIN_SENHA, 10);
 
     await Usuario.create({
-      id_usuario: gerarCodigo('USR', total + 1),
+      id_usuario: await gerarCodigoUsuarioLivre(),
       nome: ADMIN_NOME || 'Administrador',
       email: ADMIN_EMAIL,
       login: ADMIN_LOGIN,

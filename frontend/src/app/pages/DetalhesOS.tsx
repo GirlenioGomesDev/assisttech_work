@@ -9,7 +9,8 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2, FileImage, Video, MessageCircle } from 'lucide-react';
+import { Checkbox } from '../components/ui/checkbox';
+import { ArrowLeft, User, Calendar, DollarSign, Wrench, Clock, Save, CheckCircle, Package, Edit, Trash2, FileImage, Video, MessageCircle, ShieldCheck, RotateCcw, Printer, QrCode } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { formatCpf, formatPhone, onlyDigits } from '../utils/onlyDigits';
 import { AttachmentData, AttachmentInput } from '../components/AttachmentInput';
@@ -26,6 +27,29 @@ const statusOptions = [
   { value: 'entregue', label: 'Entregue', color: 'bg-gray-100 text-gray-800' },
   { value: 'cancelada', label: 'Cancelada', color: 'bg-zinc-100 text-zinc-800' },
 ];
+
+const checklistEntradaPadrao = [
+  { chave: 'fotos_entrada', label: 'Fotos do aparelho registradas', checked: false },
+  { chave: 'imei_serial', label: 'IMEI ou serial conferido', checked: false },
+  { chave: 'acessorios', label: 'Acessorios conferidos', checked: false },
+  { chave: 'estado_fisico', label: 'Estado fisico documentado', checked: false },
+  { chave: 'senha_autorizacao', label: 'Senha/autorizacao registrada quando necessario', checked: false },
+];
+
+const checklistSaidaPadrao = [
+  { chave: 'testes_finais', label: 'Testes finais realizados', checked: false },
+  { chave: 'limpeza', label: 'Aparelho limpo e revisado', checked: false },
+  { chave: 'pagamento', label: 'Pagamento conferido', checked: false },
+  { chave: 'garantia', label: 'Garantia explicada ao cliente', checked: false },
+  { chave: 'assinatura_entrega', label: 'Entrega/retirada confirmada', checked: false },
+];
+
+interface ChecklistItem {
+  chave: string;
+  label: string;
+  checked: boolean;
+  observacao?: string;
+}
 
 interface OrdemServico {
   _id: string;
@@ -93,6 +117,20 @@ interface OrdemServico {
     observacoes?: string;
     data_entrega?: string;
   };
+  checklists?: {
+    entrada?: ChecklistItem[];
+    saida?: ChecklistItem[];
+  };
+  garantia?: {
+    ativa?: boolean;
+    dias?: number;
+    inicio?: string;
+    fim?: string;
+    cobertura?: string;
+    observacoes?: string;
+  };
+  reaberturas?: Array<{ motivo?: string; usuario?: string; data?: string }>;
+  eventos?: Array<{ tipo?: string; titulo?: string; descricao?: string; usuario?: string; data?: string; metadata?: Record<string, unknown> }>;
   logs?: Array<{ acao?: string; usuario?: string; data?: string }>;
   historico_status?: Array<{ status?: string; usuario?: string; data?: string }>;
 }
@@ -116,6 +154,8 @@ export function DetalhesOS() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [relatorioMensagem, setRelatorioMensagem] = useState('');
   const [relatorioTelefone, setRelatorioTelefone] = useState('');
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrInfo, setQrInfo] = useState<{ url: string; qrUrl: string } | null>(null);
 
   const [diagnostico, setDiagnostico] = useState({
     defeito_identificado: '',
@@ -158,6 +198,15 @@ export function DetalhesOS() {
     observacoes: '',
     data_entrega: '',
   });
+  const [checklistEntrada, setChecklistEntrada] = useState<ChecklistItem[]>(checklistEntradaPadrao);
+  const [checklistSaida, setChecklistSaida] = useState<ChecklistItem[]>(checklistSaidaPadrao);
+  const [garantia, setGarantia] = useState({
+    ativa: true,
+    dias: '90',
+    cobertura: 'Garantia de servico conforme politica da empresa',
+    observacoes: '',
+  });
+  const [motivoReabertura, setMotivoReabertura] = useState('');
 
   const [dadosOS, setDadosOS] = useState({
     tipo_aparelho: '',
@@ -221,6 +270,14 @@ export function DetalhesOS() {
         observacoes: data.entrega?.observacoes || '',
         data_entrega: data.entrega?.data_entrega ? new Date(data.entrega.data_entrega).toISOString().slice(0, 16) : '',
       });
+      setChecklistEntrada(data.checklists?.entrada?.length ? data.checklists.entrada : checklistEntradaPadrao);
+      setChecklistSaida(data.checklists?.saida?.length ? data.checklists.saida : checklistSaidaPadrao);
+      setGarantia({
+        ativa: data.garantia?.ativa ?? true,
+        dias: String(data.garantia?.dias || 90),
+        cobertura: data.garantia?.cobertura || 'Garantia de servico conforme politica da empresa',
+        observacoes: data.garantia?.observacoes || '',
+      });
       setDadosOS({
         tipo_aparelho: data.aparelho?.tipo_aparelho || '',
         marca: data.aparelho?.marca || '',
@@ -276,6 +333,31 @@ export function DetalhesOS() {
     () => statusOptions.find((item) => item.value === os?.status) || statusOptions[0],
     [os?.status]
   );
+
+  const eventosTimeline = useMemo(() => {
+    if (os?.eventos?.length) return [...os.eventos].reverse();
+    if (os?.logs?.length) {
+      return [...os.logs].reverse().map((log) => ({
+        tipo: 'sistema',
+        titulo: log.acao || 'Registro',
+        descricao: log.acao,
+        usuario: log.usuario,
+        data: log.data,
+      }));
+    }
+    return (os?.historico_status || []).reverse().map((item) => ({
+      tipo: 'status',
+      titulo: `Status: ${item.status || '---'}`,
+      descricao: `Status alterado para ${item.status || '---'}`,
+      usuario: item.usuario,
+      data: item.data,
+    }));
+  }, [os]);
+
+  const progressoChecklist = (items: ChecklistItem[]) => {
+    if (!items.length) return 0;
+    return Math.round((items.filter((item) => item.checked).length / items.length) * 100);
+  };
 
   const withSave = async (fn: () => Promise<void>, successMessage: string) => {
     try {
@@ -408,6 +490,53 @@ export function DetalhesOS() {
     });
   }, 'Entrega registrada com sucesso');
 
+  const salvarChecklist = (tipo: 'entrada' | 'saida') => withSave(async () => {
+    await apiRequest(`/os/${id}/checklist/${tipo}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items: tipo === 'entrada' ? checklistEntrada : checklistSaida }),
+    });
+  }, `Checklist de ${tipo} salvo com sucesso`);
+
+  const salvarGarantia = () => withSave(async () => {
+    await apiRequest(`/os/${id}/garantia`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ativa: garantia.ativa,
+        dias: Number(garantia.dias || 0),
+        cobertura: garantia.cobertura,
+        observacoes: garantia.observacoes,
+      }),
+    });
+  }, 'Garantia registrada com sucesso');
+
+  const reabrirOS = () => withSave(async () => {
+    await apiRequest(`/os/${id}/reabrir`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo: motivoReabertura }),
+    });
+    setMotivoReabertura('');
+  }, 'OS reaberta com sucesso');
+
+  const abrirImpressao = () => {
+    const token = localStorage.getItem('token');
+    if (!token || !id) return;
+    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/os/${id}/imprimir?token=${encodeURIComponent(token)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const carregarQr = async () => {
+    try {
+      setSaving(true);
+      const data = await apiRequest(`/os/${id}/qr`);
+      setQrInfo(data);
+      setQrDialogOpen(true);
+    } catch (error: any) {
+      alert(error.message || 'Erro ao gerar QR Code');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const atualizarStatus = (status: string) => withSave(async () => {
     await apiRequest(`/os/${id}/status`, {
       method: 'PATCH',
@@ -478,6 +607,58 @@ export function DetalhesOS() {
     }
   };
 
+  const renderChecklist = (
+    titulo: string,
+    items: ChecklistItem[],
+    setItems: React.Dispatch<React.SetStateAction<ChecklistItem[]>>,
+    tipo: 'entrada' | 'saida'
+  ) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-3">
+          <span>{titulo}</span>
+          <Badge className="bg-blue-100 text-blue-800">{progressoChecklist(items)}%</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={item.chave} className="rounded-md border p-3">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={item.checked}
+                  onCheckedChange={(checked) => {
+                    setItems((current) => current.map((currentItem, currentIndex) => (
+                      currentIndex === index ? { ...currentItem, checked: Boolean(checked) } : currentItem
+                    )));
+                  }}
+                  disabled={saving}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label className="text-sm font-medium">{item.label}</Label>
+                  <Input
+                    value={item.observacao || ''}
+                    onChange={(event) => {
+                      setItems((current) => current.map((currentItem, currentIndex) => (
+                        currentIndex === index ? { ...currentItem, observacao: event.target.value } : currentItem
+                      )));
+                    }}
+                    placeholder="Observacao opcional"
+                    disabled={saving}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button onClick={() => salvarChecklist(tipo)} disabled={saving}>
+          <Save className="h-4 w-4 mr-2" />
+          Salvar checklist
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) return <Card><CardContent className="p-12 text-center text-gray-500">Carregando ordem de serviço...</CardContent></Card>;
   if (!os) return <Card><CardContent className="p-12 text-center text-gray-500">Ordem de serviço não encontrada</CardContent></Card>;
 
@@ -493,6 +674,14 @@ export function DetalhesOS() {
           <p className="text-gray-600 mt-1">Detalhes completos da ordem de serviço</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={abrirImpressao} disabled={saving}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
+          <Button variant="outline" onClick={carregarQr} disabled={saving}>
+            <QrCode className="h-4 w-4 mr-2" />
+            QR Code
+          </Button>
           {canEditarOS && (
             <Button variant="outline" onClick={() => setEditDialogOpen(true)} disabled={saving}>
               <Edit className="h-4 w-4 mr-2" />
@@ -612,6 +801,23 @@ export function DetalhesOS() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Acompanhamento por QR Code</DialogTitle>
+          </DialogHeader>
+          {qrInfo && (
+            <div className="space-y-4 text-center">
+              <img src={qrInfo.qrUrl} alt="QR Code da OS" className="mx-auto h-60 w-60 rounded-md border bg-white p-2" />
+              <Input value={qrInfo.url} readOnly />
+              <Button variant="outline" onClick={() => window.open(qrInfo.url, '_blank', 'noopener,noreferrer')} className="w-full">
+                Abrir link publico
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="geral" className="w-full">
@@ -621,6 +827,8 @@ export function DetalhesOS() {
               {canVerOrcamento && <TabsTrigger value="orcamento">Orçamento</TabsTrigger>}
               {canDiagnosticar && <TabsTrigger value="execucao">Execução</TabsTrigger>}
               {canVerFinalizacao && <TabsTrigger value="finalizacao">Finalização</TabsTrigger>}
+              <TabsTrigger value="checklists">Checklists</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
               {canVerRelatorio && <TabsTrigger value="relatorio">Relatório</TabsTrigger>}
             </TabsList>
 
@@ -764,8 +972,8 @@ export function DetalhesOS() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Valor bruto</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={pagamento.valor_bruto} onChange={(e) => setPagamento({ ...pagamento, valor_bruto: onlyDigits(e.target.value) })} disabled={!canFinanceiro || saving} /></div>
                     <div className="space-y-2"><Label>Desconto</Label><Input type="number" min="0" inputMode="numeric" pattern="[0-9]*" value={pagamento.desconto} onChange={(e) => setPagamento({ ...pagamento, desconto: onlyDigits(e.target.value) })} disabled={!canFinanceiro || saving} /></div>
-                    <div className="space-y-2"><Label>Forma de pagamento</Label><Select value={pagamento.forma_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, forma_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pix">Pix</SelectItem><SelectItem value="dinheiro">Dinheiro</SelectItem><SelectItem value="cartao">Cartão</SelectItem><SelectItem value="boleto">Boleto</SelectItem></SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Status do pagamento</Label><Select value={pagamento.status_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, status_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="pago">Pago</SelectItem><SelectItem value="cancelado">Cancelado</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Forma de pagamento</Label><Select value={pagamento.forma_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, forma_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pix">Pix</SelectItem><SelectItem value="dinheiro">Dinheiro</SelectItem><SelectItem value="cartao_credito">Cartao de credito</SelectItem><SelectItem value="cartao_debito">Cartao de debito</SelectItem><SelectItem value="boleto">Boleto</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Status do pagamento</Label><Select value={pagamento.status_pagamento} onValueChange={(value) => setPagamento({ ...pagamento, status_pagamento: value })} disabled={!canFinanceiro || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="parcial">Parcial</SelectItem><SelectItem value="pago">Pago</SelectItem></SelectContent></Select></div>
                     <div className="space-y-2 md:col-span-2"><Label>Data do pagamento</Label><Input type="datetime-local" value={pagamento.data_pagamento} onChange={(e) => setPagamento({ ...pagamento, data_pagamento: e.target.value })} disabled={!canFinanceiro || saving} /></div>
                   </div>
                   <div className="space-y-2"><Label>Observações</Label><Textarea value={pagamento.observacoes} onChange={(e) => setPagamento({ ...pagamento, observacoes: e.target.value })} disabled={!canFinanceiro || saving} /></div>
@@ -783,6 +991,67 @@ export function DetalhesOS() {
                   </div>
                   <div className="space-y-2"><Label>Observações</Label><Textarea value={entrega.observacoes} onChange={(e) => setEntrega({ ...entrega, observacoes: e.target.value })} disabled={!canEntregar || saving} /></div>
                   {canEntregar && <Button onClick={salvarEntrega} disabled={saving}><Package className="h-4 w-4 mr-2" />Confirmar entrega</Button>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="checklists" className="space-y-4">
+              {renderChecklist('Checklist de entrada', checklistEntrada, setChecklistEntrada, 'entrada')}
+              {renderChecklist('Checklist de saida', checklistSaida, setChecklistSaida, 'saida')}
+            </TabsContent>
+
+            <TabsContent value="timeline" className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle>Timeline da OS</CardTitle></CardHeader>
+                <CardContent>
+                  {eventosTimeline.length === 0 ? (
+                    <p className="text-sm text-gray-500">Nenhum evento registrado.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {eventosTimeline.map((evento, index) => (
+                        <div key={`${evento.titulo}-${evento.data}-${index}`} className="relative border-l border-gray-200 pl-4">
+                          <span className="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full bg-blue-600" />
+                          <div className="rounded-md border p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="font-medium text-gray-900">{evento.titulo || 'Evento'}</p>
+                              <Badge className="bg-gray-100 text-gray-800">{evento.tipo || 'sistema'}</Badge>
+                            </div>
+                            {evento.descricao && <p className="mt-2 text-sm text-gray-700">{evento.descricao}</p>}
+                            <p className="mt-2 text-xs text-gray-500">
+                              {formatarData(evento.data)} por {evento.usuario || 'Sistema'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Garantia e retorno</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Dias de garantia</Label>
+                      <Input value={garantia.dias} onChange={(e) => setGarantia({ ...garantia, dias: onlyDigits(e.target.value) })} disabled={!canEntregar || saving} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cobertura</Label>
+                      <Input value={garantia.cobertura} onChange={(e) => setGarantia({ ...garantia, cobertura: e.target.value })} disabled={!canEntregar || saving} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Observacoes da garantia</Label>
+                      <Textarea value={garantia.observacoes} onChange={(e) => setGarantia({ ...garantia, observacoes: e.target.value })} disabled={!canEntregar || saving} />
+                    </div>
+                  </div>
+                  {os.garantia?.fim && <p className="text-sm text-gray-600">Garantia vigente ate {formatarData(os.garantia.fim)}</p>}
+                  {canEntregar && <Button onClick={salvarGarantia} disabled={saving}><ShieldCheck className="h-4 w-4 mr-2" />Registrar garantia</Button>}
+                  <div className="border-t pt-4 space-y-2">
+                    <Label>Motivo para reabrir OS</Label>
+                    <Textarea value={motivoReabertura} onChange={(e) => setMotivoReabertura(e.target.value)} placeholder="Ex: cliente retornou dentro da garantia relatando o mesmo problema" disabled={!canAlterarStatus || saving} />
+                    {canAlterarStatus && <Button variant="outline" onClick={reabrirOS} disabled={saving || motivoReabertura.trim().length < 5}><RotateCcw className="h-4 w-4 mr-2" />Reabrir OS</Button>}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

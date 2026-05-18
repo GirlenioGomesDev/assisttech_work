@@ -1,20 +1,50 @@
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { Clientes } from './pages/Clientes';
-import { Aparelhos } from './pages/Aparelhos';
-import { OrdensServico } from './pages/OrdensServico';
-import { NovaOS } from './pages/NovaOS';
-import { DetalhesOS } from './pages/DetalhesOS';
-import { Pagamentos } from './pages/Pagamentos';
-import { Entregas } from './pages/Entregas';
-import { Usuarios } from './pages/Usuarios';
-import { Relatorios } from './pages/Relatorios';
-import { RelatoriosClientes } from './pages/RelatoriosClientes';
-import { Estoque } from './pages/Estoque';
-import { Auditoria } from './pages/Auditoria';
-import { HistoricoCliente } from './pages/HistoricoCliente';
+import { Skeleton } from './components/ui/skeleton';
 import { MainLayout } from './layouts/MainLayout';
+
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })));
+const Clientes = lazy(() => import('./pages/Clientes').then((module) => ({ default: module.Clientes })));
+const Aparelhos = lazy(() => import('./pages/Aparelhos').then((module) => ({ default: module.Aparelhos })));
+const OrdensServico = lazy(() => import('./pages/OrdensServico').then((module) => ({ default: module.OrdensServico })));
+const NovaOS = lazy(() => import('./pages/NovaOS').then((module) => ({ default: module.NovaOS })));
+const DetalhesOS = lazy(() => import('./pages/DetalhesOS').then((module) => ({ default: module.DetalhesOS })));
+const Pagamentos = lazy(() => import('./pages/Pagamentos').then((module) => ({ default: module.Pagamentos })));
+const Entregas = lazy(() => import('./pages/Entregas').then((module) => ({ default: module.Entregas })));
+const Usuarios = lazy(() => import('./pages/Usuarios').then((module) => ({ default: module.Usuarios })));
+const Relatorios = lazy(() => import('./pages/Relatorios').then((module) => ({ default: module.Relatorios })));
+const RelatoriosClientes = lazy(() => import('./pages/RelatoriosClientes').then((module) => ({ default: module.RelatoriosClientes })));
+const Estoque = lazy(() => import('./pages/Estoque').then((module) => ({ default: module.Estoque })));
+const Auditoria = lazy(() => import('./pages/Auditoria').then((module) => ({ default: module.Auditoria })));
+const HistoricoCliente = lazy(() => import('./pages/HistoricoCliente').then((module) => ({ default: module.HistoricoCliente })));
+const OSPublica = lazy(() => import('./pages/OSPublica').then((module) => ({ default: module.OSPublica })));
+const Notificacoes = lazy(() => import('./pages/Notificacoes').then((module) => ({ default: module.Notificacoes })));
+const Seguranca = lazy(() => import('./pages/Seguranca').then((module) => ({ default: module.Seguranca })));
+const Configuracoes = lazy(() => import('./pages/Configuracoes').then((module) => ({ default: module.Configuracoes })));
+const Backup = lazy(() => import('./pages/Backup').then((module) => ({ default: module.Backup })));
+
+function PageLoading() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-24 w-full" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+    </div>
+  );
+}
+
+function page(Component: LazyExoticComponent<ComponentType>) {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <Component />
+    </Suspense>
+  );
+}
 
 function isAuthed() {
   return !!localStorage.getItem('token') && !!getStoredUser();
@@ -47,40 +77,45 @@ function ProtectedRoute({ roles }: { roles?: string[] }) {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', Component: Login },
+  { path: '/login', element: page(Login) },
+  { path: '/os-publica/:codigo', element: page(OSPublica) },
   { path: '/', element: <Navigate to="/login" replace /> },
   {
     element: <ProtectedRoute />,
     children: [{ element: <MainLayout />, children: [
-      { path: '/dashboard', Component: Dashboard },
-      { path: '/clientes', Component: Clientes },
-      { path: '/aparelhos', Component: Aparelhos },
-      { path: '/ordens-servico', Component: OrdensServico },
-      { path: '/nova-os', Component: NovaOS },
-      { path: '/relatorios-clientes', Component: RelatoriosClientes },
-      { path: '/pagamentos', Component: Pagamentos },
-      { path: '/entregas', Component: Entregas },
-      { path: '/relatorios', Component: Relatorios },
-      { path: '/historico-cliente/:id', Component: HistoricoCliente },
+      { path: '/dashboard', element: page(Dashboard) },
+      { path: '/clientes', element: page(Clientes) },
+      { path: '/aparelhos', element: page(Aparelhos) },
+      { path: '/ordens-servico', element: page(OrdensServico) },
+      { path: '/nova-os', element: page(NovaOS) },
+      { path: '/relatorios-clientes', element: page(RelatoriosClientes) },
+      { path: '/pagamentos', element: page(Pagamentos) },
+      { path: '/notificacoes', element: page(Notificacoes) },
+      { path: '/entregas', element: page(Entregas) },
+      { path: '/relatorios', element: page(Relatorios) },
+      { path: '/historico-cliente/:id', element: page(HistoricoCliente) },
     ] }]
   },
   {
     element: <ProtectedRoute roles={['admin', 'atendente', 'tecnico', 'financeiro']} />,
     children: [{ element: <MainLayout />, children: [
-      { path: '/ordem-servico/:id', Component: DetalhesOS },
+      { path: '/ordem-servico/:id', element: page(DetalhesOS) },
     ] }]
   },
   {
     element: <ProtectedRoute roles={['admin', 'atendente', 'financeiro']} />,
     children: [{ element: <MainLayout />, children: [
-      { path: '/estoque', Component: Estoque },
+      { path: '/estoque', element: page(Estoque) },
     ] }]
   },
   {
     element: <ProtectedRoute roles={['admin']} />,
     children: [{ element: <MainLayout />, children: [
-      { path: '/usuarios', Component: Usuarios },
-      { path: '/auditoria', Component: Auditoria },
+      { path: '/usuarios', element: page(Usuarios) },
+      { path: '/auditoria', element: page(Auditoria) },
+      { path: '/seguranca', element: page(Seguranca) },
+      { path: '/configuracoes', element: page(Configuracoes) },
+      { path: '/backup', element: page(Backup) },
     ] }]
   }
 ]);

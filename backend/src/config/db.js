@@ -7,10 +7,10 @@ if (!cached) {
 }
 
 async function conectarDB() {
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!uri) {
-    throw new Error('MONGO_URI não configurada nas variáveis de ambiente');
+    throw new Error('MONGO_URI nao configurada nas variaveis de ambiente');
   }
 
   if (cached.conn) return cached.conn;
@@ -25,7 +25,7 @@ async function conectarDB() {
 
   try {
     cached.conn = await cached.promise;
-    console.log('MongoDB conectado com sucesso!');
+    console.log('MongoDB conectado com sucesso');
     return cached.conn;
   } catch (error) {
     cached.promise = null;

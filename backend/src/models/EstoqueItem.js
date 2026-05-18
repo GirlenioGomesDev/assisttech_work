@@ -9,6 +9,8 @@ const EstoqueItemSchema = new mongoose.Schema({
   quantidade: { type: Number, default: 0 },
   estoque_minimo: { type: Number, default: 0 },
   valor_unitario: { type: Number, default: 0 },
+  custo_medio: { type: Number, default: 0 },
+  ultima_movimentacao: Date,
   fornecedor: { type: String, trim: true },
   observacoes: String,
   ativo: { type: Boolean, default: true },
