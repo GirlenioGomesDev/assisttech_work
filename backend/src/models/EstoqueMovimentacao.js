@@ -1,3 +1,4 @@
+// Historico de entradas e saidas de estoque.
 const mongoose = require('mongoose');
 
 const EstoqueMovimentacaoSchema = new mongoose.Schema({

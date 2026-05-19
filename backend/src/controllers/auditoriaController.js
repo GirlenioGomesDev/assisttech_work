@@ -1,3 +1,4 @@
+// Consulta dos registros de auditoria.
 const Auditoria = require('../models/Auditoria');
 
 const escapeRegExp = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

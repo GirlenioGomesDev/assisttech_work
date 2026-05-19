@@ -38,5 +38,37 @@ assisttech/
 └── README.md
 ```
 
+## Rodando localmente
 
+Requisitos:
 
+- Node.js
+- MongoDB local ou MongoDB Atlas
+
+Backend:
+
+```bash
+cd backend
+copy .env.example .env
+npm install
+npm run dev
+```
+
+Frontend:
+
+```bash
+cd frontend
+copy .env.example .env
+npm install
+npm run dev
+```
+
+Acesse:
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000/api/health
+
+Usuario inicial:
+
+- login: `admin`
+- senha: `admin123`

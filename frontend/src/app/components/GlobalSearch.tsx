@@ -1,3 +1,4 @@
+// Busca global no topo, com atalho e navegacao para o resultado.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Badge } from './ui/badge';

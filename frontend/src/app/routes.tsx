@@ -1,3 +1,4 @@
+// Define todas as rotas e bloqueios por perfil.
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { Skeleton } from './components/ui/skeleton';
@@ -25,6 +26,7 @@ const Configuracoes = lazy(() => import('./pages/Configuracoes').then((module) =
 const Backup = lazy(() => import('./pages/Backup').then((module) => ({ default: module.Backup })));
 
 function PageLoading() {
+  // Carregamento visual enquanto uma tela lazy ainda nao chegou.
   return (
     <div className="space-y-4">
       <Skeleton className="h-8 w-64" />
@@ -39,6 +41,7 @@ function PageLoading() {
 }
 
 function page(Component: LazyExoticComponent<ComponentType>) {
+  // Envolve paginas lazy com o mesmo fallback.
   return (
     <Suspense fallback={<PageLoading />}>
       <Component />
@@ -47,9 +50,11 @@ function page(Component: LazyExoticComponent<ComponentType>) {
 }
 
 function isAuthed() {
+  // Confere token e usuario salvo antes de liberar area interna.
   return !!localStorage.getItem('token') && !!getStoredUser();
 }
 function getStoredUser() {
+  // Se o localStorage estiver corrompido, limpa login antigo.
   try {
     const raw = localStorage.getItem('user');
     return raw ? JSON.parse(raw) : null;
@@ -60,6 +65,7 @@ function getStoredUser() {
   }
 }
 function hasRole(roles?: string[]) {
+  // Valida se o usuario possui pelo menos um perfil aceito.
   if (!roles || roles.length === 0) return true;
   const user = getStoredUser();
   if (!user) return false;
@@ -67,6 +73,7 @@ function hasRole(roles?: string[]) {
   return perfis.some((perfil: string) => roles.includes(perfil));
 }
 function ProtectedRoute({ roles }: { roles?: string[] }) {
+  // Redireciona quem nao esta logado ou nao tem permissao.
   if (!isAuthed()) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

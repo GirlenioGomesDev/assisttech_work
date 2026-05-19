@@ -1,5 +1,7 @@
 {
+  // Regras que o TypeScript usa para validar o frontend.
   "compilerOptions": {
+    // Alvo moderno para o codigo gerado pelo Vite.
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
@@ -15,10 +17,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    // Permite importar arquivos com @/...
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
   },
+  // Arquivos que entram na checagem de tipos.
   "include": ["src", "vite.config.ts"]
 }

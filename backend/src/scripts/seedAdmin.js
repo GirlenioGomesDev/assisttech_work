@@ -1,3 +1,4 @@
+// Cria ou atualiza o usuario admin quando rodado manualmente.
 require('dotenv').config();
 const conectarDB = require('../config/db');
 const ensureAdmin = require('../utils/ensureAdmin');

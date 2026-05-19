@@ -1,3 +1,4 @@
+// Configuracoes gerais usadas pela aplicacao.
 const mongoose = require('mongoose');
 
 const ConfiguracaoSistemaSchema = new mongoose.Schema({

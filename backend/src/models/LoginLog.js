@@ -1,3 +1,4 @@
+// Historico das tentativas de login.
 const mongoose = require('mongoose');
 
 const LoginLogSchema = new mongoose.Schema({

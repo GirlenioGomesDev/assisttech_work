@@ -1,3 +1,4 @@
+// Registro financeiro ligado a pagamentos e servicos.
 const mongoose = require('mongoose');
 
 const LancamentoFinanceiroSchema = new mongoose.Schema({

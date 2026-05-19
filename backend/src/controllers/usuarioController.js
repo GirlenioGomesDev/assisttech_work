@@ -1,3 +1,4 @@
+// Cadastro, edicao e permissao dos usuarios.
 const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 const gerarCodigo = require('../utils/gerarCodigo');

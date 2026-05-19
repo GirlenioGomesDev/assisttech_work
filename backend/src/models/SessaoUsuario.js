@@ -1,3 +1,4 @@
+// Sessao ativa ou encerrada de um usuario logado.
 const mongoose = require('mongoose');
 
 const SessaoUsuarioSchema = new mongoose.Schema({

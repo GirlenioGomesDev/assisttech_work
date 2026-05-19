@@ -1,7 +1,9 @@
+// Middleware que valida JWT e confere se a sessao ainda esta ativa.
 const jwt = require('jsonwebtoken');
 const SessaoUsuario = require('../models/SessaoUsuario');
 
 async function auth(req, res, next) {
+  // O token precisa vir como: Authorization: Bearer <token>.
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ erro: 'Token nao informado' });
 
@@ -12,6 +14,7 @@ async function auth(req, res, next) {
   try {
     req.usuario = jwt.verify(token, process.env.JWT_SECRET);
     if (req.usuario.sid) {
+      // A sessao no banco permite invalidar logout e expiracao.
       const sessao = await SessaoUsuario.findOne({ id_sessao: req.usuario.sid }).select('status expira_em').lean();
       if (!sessao || sessao.status !== 'ativa') return res.status(401).json({ erro: 'Sessao encerrada' });
       if (sessao.expira_em && new Date(sessao.expira_em).getTime() < Date.now()) {
@@ -28,6 +31,7 @@ async function auth(req, res, next) {
 
 function permit(...roles) {
   return (req, res, next) => {
+    // Libera a rota se qualquer perfil do usuario estiver autorizado.
     if (!req.usuario) return res.status(401).json({ erro: 'Nao autenticado' });
     const perfis = Array.isArray(req.usuario.perfis) && req.usuario.perfis.length ? req.usuario.perfis : [req.usuario.perfil];
     if (!perfis.some((perfil) => roles.includes(perfil))) {

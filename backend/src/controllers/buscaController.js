@@ -1,3 +1,4 @@
+// Busca global usada pela barra de pesquisa do sistema.
 const Cliente = require('../models/Cliente');
 const OrdemServico = require('../models/OrdemServico');
 const EstoqueItem = require('../models/EstoqueItem');

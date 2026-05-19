@@ -1,3 +1,4 @@
+// Tela completa de acompanhamento de uma ordem de servico.
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';

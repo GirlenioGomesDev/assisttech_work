@@ -1,3 +1,4 @@
+// Layout interno com menu, topo, busca global e area das paginas.
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Bell, ClipboardList, DatabaseBackup, LayoutDashboard, Users, Smartphone, FileText, Wrench, DollarSign, Package, UserCog, BarChart3, LogOut, Menu, Moon, Settings, ShieldCheck, Sun, X } from 'lucide-react';
@@ -6,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { GlobalSearch } from '../components/GlobalSearch';
 
 const navigation = [
+  // Cada item declara quais perfis podem ve-lo no menu.
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin','atendente','tecnico','financeiro'] },
   { name: 'Clientes', href: '/clientes', icon: Users, roles: ['admin','atendente'] },
   { name: 'Aparelhos', href: '/aparelhos', icon: Smartphone, roles: ['admin','atendente','tecnico'] },

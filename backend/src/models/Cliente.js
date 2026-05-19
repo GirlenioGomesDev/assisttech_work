@@ -1,3 +1,4 @@
+// Dados cadastrais do cliente atendido pela assistencia.
 const mongoose = require('mongoose');
 const onlyDigits = require('../utils/onlyDigits');
 

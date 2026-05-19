@@ -1,3 +1,4 @@
+// Mantem usuario logado e funcoes de login/logout para o app inteiro.
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { apiRequest } from '../services/api';
 

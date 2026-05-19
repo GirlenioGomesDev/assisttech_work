@@ -1,3 +1,4 @@
+// Tela administrativa com historico de acoes do sistema.
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';

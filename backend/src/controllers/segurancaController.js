@@ -1,3 +1,4 @@
+// Dados de sessoes e logs de login para a tela de seguranca.
 const LoginLog = require('../models/LoginLog');
 const SessaoUsuario = require('../models/SessaoUsuario');
 const registrarAuditoria = require('../utils/auditoria');

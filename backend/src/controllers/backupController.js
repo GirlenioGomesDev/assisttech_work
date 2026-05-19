@@ -1,4 +1,5 @@
 const Auditoria = require('../models/Auditoria');
+// Exportacao e importacao dos dados principais do sistema.
 const Cliente = require('../models/Cliente');
 const ConfiguracaoSistema = require('../models/ConfiguracaoSistema');
 const EstoqueItem = require('../models/EstoqueItem');

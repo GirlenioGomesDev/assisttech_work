@@ -1,3 +1,4 @@
+// Ordem de servico com dados do aparelho, status e atendimento.
 const mongoose = require('mongoose');
 
 const ClienteSnapshotSchema = new mongoose.Schema({ id_cliente: String, nome: String, telefone: String, whatsapp: String }, { _id: false });

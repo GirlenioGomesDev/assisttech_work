@@ -1,3 +1,4 @@
+// Helper para gravar auditoria sem quebrar o fluxo principal.
 const Auditoria = require('../models/Auditoria');
 
 const getPerfis = (usuario = {}) => (

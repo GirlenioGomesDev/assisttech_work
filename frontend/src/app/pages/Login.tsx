@@ -1,3 +1,4 @@
+// Tela de entrada do usuario no sistema.
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';

@@ -1,3 +1,4 @@
+// Conexao reutilizavel com o MongoDB.
 const mongoose = require('mongoose');
 
 let cached = global.mongoose;
@@ -7,6 +8,7 @@ if (!cached) {
 }
 
 async function conectarDB() {
+  // Aceita os dois nomes para facilitar deploy local e cloud.
   const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!uri) {
@@ -16,6 +18,7 @@ async function conectarDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
+    // Guarda a promessa para evitar duas conexoes ao mesmo tempo.
     cached.promise = mongoose
       .connect(uri, {
         bufferCommands: false,

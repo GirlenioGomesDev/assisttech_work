@@ -1,3 +1,4 @@
+// Leitura e gravacao das configuracoes gerais do sistema.
 const ConfiguracaoSistema = require('../models/ConfiguracaoSistema');
 const registrarAuditoria = require('../utils/auditoria');
 const onlyDigits = require('../utils/onlyDigits');

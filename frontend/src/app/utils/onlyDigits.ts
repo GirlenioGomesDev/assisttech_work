@@ -1,3 +1,4 @@
+// Remove tudo que nao for numero.
 export const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
 export const formatCpf = (value: string) => {

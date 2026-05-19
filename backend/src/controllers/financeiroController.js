@@ -1,3 +1,4 @@
+// Lancamentos e resumo financeiro das ordens.
 const LancamentoFinanceiro = require('../models/LancamentoFinanceiro');
 const gerarCodigo = require('../utils/gerarCodigo');
 const registrarAuditoria = require('../utils/auditoria');

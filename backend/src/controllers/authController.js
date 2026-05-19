@@ -1,3 +1,4 @@
+// Login, logout e registro das tentativas de acesso.
 const Usuario = require('../models/Usuario');
 const LoginLog = require('../models/LoginLog');
 const SessaoUsuario = require('../models/SessaoUsuario');

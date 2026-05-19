@@ -1,3 +1,4 @@
+// Mensagens internas exibidas aos usuarios.
 const mongoose = require('mongoose');
 
 const NotificacaoSchema = new mongoose.Schema({

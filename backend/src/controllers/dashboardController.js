@@ -1,3 +1,4 @@
+// Indicadores resumidos exibidos no dashboard.
 const OrdemServico = require('../models/OrdemServico');
 const EstoqueItem = require('../models/EstoqueItem');
 const LancamentoFinanceiro = require('../models/LancamentoFinanceiro');

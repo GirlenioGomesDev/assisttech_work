@@ -1,3 +1,4 @@
+// Troca alert() antigo por toast visual sem mudar chamadas existentes.
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 

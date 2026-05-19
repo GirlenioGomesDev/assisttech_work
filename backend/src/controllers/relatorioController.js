@@ -1,3 +1,4 @@
+// Relatorios consolidados para acompanhamento da assistencia.
 const OrdemServico = require('../models/OrdemServico');
 const EstoqueItem = require('../models/EstoqueItem');
 

@@ -1,3 +1,4 @@
+// Popula o banco com dados de exemplo mais proximos do uso real.
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const conectarDB = require('../config/db');

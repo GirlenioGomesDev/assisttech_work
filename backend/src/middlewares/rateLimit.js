@@ -1,3 +1,4 @@
+// Limitador simples em memoria para reduzir tentativas repetidas.
 const buckets = new Map();
 
 const getClientKey = (req, keyPrefix) => {

@@ -1,3 +1,4 @@
+// Item cadastrado no estoque.
 const mongoose = require('mongoose');
 
 const EstoqueItemSchema = new mongoose.Schema({

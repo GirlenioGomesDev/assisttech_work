@@ -1,3 +1,4 @@
+// Garante que exista um usuario admin ao iniciar a API.
 const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
 const gerarCodigo = require('./gerarCodigo');

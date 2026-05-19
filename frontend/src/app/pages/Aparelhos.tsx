@@ -1,3 +1,4 @@
+// Tela para listar e filtrar aparelhos vinculados as ordens.
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';

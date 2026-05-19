@@ -1,3 +1,4 @@
+// Produtos, saldo e movimentacoes do estoque.
 const EstoqueItem = require('../models/EstoqueItem');
 const EstoqueMovimentacao = require('../models/EstoqueMovimentacao');
 const gerarCodigo = require('../utils/gerarCodigo');

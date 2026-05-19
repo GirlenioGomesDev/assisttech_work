@@ -1,3 +1,4 @@
+// Rotas de configuracoes do sistema.
 const express = require('express');
 const auth = require('../middlewares/authMiddleware');
 const { permit } = require('../middlewares/authMiddleware');

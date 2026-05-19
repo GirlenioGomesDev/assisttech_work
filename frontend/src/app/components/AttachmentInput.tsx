@@ -1,3 +1,4 @@
+// Campo de anexos convertido para base64 antes de enviar para a API.
 import { useRef, useState } from 'react';
 import { FileImage, Trash2, Upload, Video } from 'lucide-react';
 import { Button } from './ui/button';

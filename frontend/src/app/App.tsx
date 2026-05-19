@@ -1,3 +1,4 @@
+// Junta contexto de login, rotas e mensagens globais da aplicacao.
 import { RouterProvider } from 'react-router';
 import { AuthProvider } from './contexts/AuthContext';
 import { router } from './routes';

@@ -1,3 +1,4 @@
+// CRUD e consultas ligadas aos clientes.
 const Cliente = require('../models/Cliente');
 const OrdemServico = require('../models/OrdemServico');
 const gerarCodigo = require('../utils/gerarCodigo');

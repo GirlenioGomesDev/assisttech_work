@@ -1,3 +1,4 @@
+// Rotas da busca global.
 const express = require('express');
 const auth = require('../middlewares/authMiddleware');
 const { permit } = require('../middlewares/authMiddleware');

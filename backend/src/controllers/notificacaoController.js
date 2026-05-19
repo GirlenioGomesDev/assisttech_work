@@ -1,3 +1,4 @@
+// Notificacoes internas mostradas para os usuarios.
 const Notificacao = require('../models/Notificacao');
 const gerarCodigo = require('../utils/gerarCodigo');
 const onlyDigits = require('../utils/onlyDigits');

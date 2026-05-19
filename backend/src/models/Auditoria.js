@@ -1,3 +1,4 @@
+// Registro de acoes importantes feitas no sistema.
 const mongoose = require('mongoose');
 
 const AuditoriaSchema = new mongoose.Schema({

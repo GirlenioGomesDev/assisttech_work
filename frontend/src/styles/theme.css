@@ -1,3 +1,4 @@
+/* Tokens visuais e variaveis de tema claro/escuro. */
 @custom-variant dark (&:is(.dark *));
 
 :root {
